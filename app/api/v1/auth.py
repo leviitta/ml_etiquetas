@@ -21,9 +21,10 @@ oauth.register(
 
 @router.get('/login')
 async def login(request: Request):
-    # This will generate the redirect URI correctly based on the incoming request,
-    # or you can hardcode it to the specific callback endpoint
-    redirect_uri = request.url_for('auth_callback')
+    redirect_uri = os.getenv(
+        'REDIRECT_URI',
+        str(request.url_for('auth_callback'))
+    )
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @router.get('/callback', name='auth_callback')

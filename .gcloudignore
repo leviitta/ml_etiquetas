@@ -1,0 +1,10 @@
+.gcloudignore
+.git
+.gitignore
+
+# Entornos virtuales
+.venv
+venv/
+
+# Archivos de Python compilados y caches
+__pycache__/
