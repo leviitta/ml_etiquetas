@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extractor de Etiquetas ML</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-primary: #3b82f6;
+            --accent-hover: #2563eb;
+            --error-color: #ef4444;
+            --error-bg: rgba(239, 68, 68, 0.1);
+            --success-color: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            line-height: 1.5;
+        }
+
+        .layout-wrapper {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            width: 100%;
+            max-width: 500px;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            margin: 0 auto;
+        }
+
+        .panel-right {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-20px);
+            transition: all 0.5s ease;
+            height: 0;
+            overflow: hidden;
+        }
+
+        @media (min-width: 900px) {
+            .layout-wrapper.has-result {
+                max-width: 1100px;
+                grid-template-columns: 450px 1fr;
+                /* Left panel 450px, right panel fills rest */
+            }
+
+            .layout-wrapper.has-result .panel-right {
+                opacity: 1;
+                visibility: visible;
+                transform: translateX(0);
+                height: auto;
+                overflow: visible;
+            }
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.6);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .upload-area {
+            position: relative;
+            border: 2px dashed var(--card-border);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(15, 23, 42, 0.4);
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--accent-primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 1rem;
+            color: var(--accent-primary);
+            transition: transform 0.3s ease;
+        }
+
+        .upload-area:hover .upload-icon {
+            transform: translateY(-5px);
+        }
+
+        .upload-text {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            background: var(--accent-primary);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn:hover:not(:disabled) {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            opacity: 0.7;
+            box-shadow: none;
+        }
+
+        .btn-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 0.5rem;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .alert-error {
+            background-color: var(--error-bg);
+            color: var(--error-color);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .alert-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        #fileName {
+            display: none;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: var(--accent-primary);
+            font-weight: 500;
+            background: rgba(59, 130, 246, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            word-break: break-all;
+        }
+
+        /* Loading animation */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="layout-wrapper" id="mainLayout">
+        <!-- Panel Izquierdo: Formulario -->
+        <div class="panel-left">
+            <div class="glass-card">
+                <div class="header">
+                    {% if user %}
+                    <div
+                        style="display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; gap: 1rem; background: rgba(59, 130, 246, 0.1); padding: 0.5rem 1rem; border-radius: 99px; border: 1px solid rgba(59, 130, 246, 0.2);">
+                        <img src="{{ user.picture }}" alt="Profile"
+                            style="width: 28px; height: 28px; border-radius: 50%;">
+                        <span style="font-weight: 500; font-size: 0.9rem;">Hola, {{ user.name }}</span>
+                        <a href="/api/v1/auth/logout"
+                            style="color: var(--error-color); text-decoration: none; font-size: 0.85rem; font-weight: 600; margin-left: 0.5rem;">Cerrar
+                            sesión</a>
+                    </div>
+                    {% endif %}
+                    <h1>Optimizador etiquetas Mercado Libre</h1>
+                    {% if user %}
+                    <p>Sube tus PDF's para optimizar la impresión de etiquetas</p>
+                    {% endif %}
+                </div>
+
+                <div id="errorAlert" class="alert alert-error" style="display: none;">
+                    <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span id="errorMessage"></span>
+                </div>
+
+                {% if user %}
+                <div id="uploadUI">
+                    <form action="/api/v1/extract" method="post" enctype="multipart/form-data" id="uploadForm">
+                        <div class="upload-area" id="dropZone">
+                            <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                                </path>
+                            </svg>
+                            <div class="upload-text">Haz clic o arrastra un PDF aquí</div>
+                            <div class="upload-subtext">Puedes seleccionar varios archivos</div>
+                            <input type="file" name="files" id="fileInput" accept="application/pdf" multiple required>
+                            <div id="fileName"></div>
+                        </div>
+
+                        <div id="labelsConfigContainer" style="margin-bottom: 1.5rem; text-align: left; display: none;">
+                            <label for="labelsPerPage"
+                                style="display: block; font-weight: 500; font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-secondary);">Etiquetas
+                                por hoja (A4):</label>
+                            <select name="labels_per_page" id="labelsPerPage"
+                                style="width: 100%; padding: 0.875rem; border-radius: 12px; border: 1px solid var(--card-border); background: rgba(15, 23, 42, 0.6); color: white; outline: none; font-family: inherit; font-size: 1rem; cursor: pointer; appearance: auto;">
+                                <option value="1">1 Etiqueta por hoja</option>
+                                <option value="2">2 Etiquetas por hoja</option>
+                                <option value="4">4 Etiquetas por hoja</option>
+                                <option value="6">6 Etiquetas por hoja</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn" id="submitBtn" disabled>
+                            <svg class="btn-icon" id="btnIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            <div class="spinner" id="spinner"></div>
+                            <span id="btnText">Procesar Etiquetas</span>
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <div style="text-align: center; margin-top: 1rem; padding: 2rem 0;">
+                    <a href="/api/v1/auth/login" class="btn"
+                        style="background: white; color: #333; max-width: 300px; margin: 0 auto; display: flex; gap: 10px; align-items: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
+                            <path fill="#FFC107"
+                                d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+                            <path fill="#FF3D00"
+                                d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+                            <path fill="#4CAF50"
+                                d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
+                            <path fill="#1976D2"
+                                d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+                        </svg>
+                        Iniciar sesión con Google
+                    </a>
+                    <p style="margin-top: 1.5rem; color: var(--text-secondary); font-size: 0.95rem;">Para procesar
+                        archivos, necesitas
+                        acceder a tu cuenta primero.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Visualizador -->
+        <div class="panel-right" id="rightPanel">
+            <div class="glass-card" style="height: 100%; display: flex; flex-direction: column; padding: 2rem;">
+                <div class="header"
+                    style="margin-bottom: 1.5rem; text-align: left; display: flex; justify-content: space-between; align-items: center;">
+                    <h2
+                        style="font-size: 1.5rem; font-weight: 600; margin: 0; background: linear-gradient(to right, #60a5fa, #a78bfa); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;">
+                        Resultado</h2>
+                    <div
+                        style="background-color: var(--success-bg); color: var(--success-color); padding: 0.35rem 0.85rem; border-radius: 999px; font-size: 0.85rem; font-weight: 600; border: 1px solid rgba(16, 185, 129, 0.3); display: flex; align-items: center;">
+                        <svg style="width: 16px; height: 16px; margin-right: 6px;" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        ¡Éxito!
+                    </div>
+                </div>
+
+                <div
+                    style="flex: 1; border-radius: 12px; overflow: hidden; border: 1px solid var(--card-border); background: #525659; margin-bottom: 1.5rem; min-height: 500px;">
+                    <!-- Se le pasará URL+#toolbar=0 para esconder las opciones -->
+                    <iframe id="pdfPreview" style="width: 100%; height: 100%; border: none;"></iframe>
+                </div>
+
+                <a id="downloadBtn" href="#" class="btn"
+                    style="background: var(--success-color); box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3); text-decoration: none;">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    Descargar Etiquetas Optimizadas
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileNameDisplay = document.getElementById('fileName');
+        const submitBtn = document.getElementById('submitBtn');
+        const dropZone = document.getElementById('dropZone');
+        const form = document.getElementById('uploadForm');
+        const btnText = document.getElementById('btnText');
+        const btnIcon = document.getElementById('btnIcon');
+        const spinner = document.getElementById('spinner');
+        const errorAlert = document.getElementById('errorAlert');
+        const errorMessage = document.getElementById('errorMessage');
+        const labelsConfigContainer = document.getElementById('labelsConfigContainer');
+
+        fileInput.addEventListener('change', function (e) {
+            const files = this.files;
+            if (files && files.length > 0) {
+                if (files.length === 1) {
+                    fileNameDisplay.textContent = files[0].name;
+                } else {
+                    fileNameDisplay.textContent = `${files.length} archivos seleccionados`;
+                }
+                fileNameDisplay.style.display = 'inline-block';
+                submitBtn.disabled = false;
+                errorAlert.style.display = 'none';
+                labelsConfigContainer.style.display = 'block';
+
+                // Lógica dinámica para deshabilitar opciones según la cantidad de archivos
+                const select = document.getElementById('labelsPerPage');
+                let firstAvailable = null;
+
+                for (let i = 0; i < select.options.length; i++) {
+                    const opt = select.options[i];
+                    const val = parseInt(opt.value);
+
+                    if (files.length <= 6 && val < files.length) {
+                        opt.disabled = true;
+                        opt.style.display = 'none'; // Soporte en algunos navegadores
+                    } else if (files.length > 6 && val < 6) {
+                        opt.disabled = true;
+                        opt.style.display = 'none';
+                    } else {
+                        opt.disabled = false;
+                        opt.style.display = '';
+                        if (!firstAvailable) firstAvailable = opt;
+                    }
+                }
+
+                // Seleccionar automáticamente la primera opción válida
+                if (firstAvailable) {
+                    select.value = firstAvailable.value;
+                }
+
+            } else {
+                fileNameDisplay.style.display = 'none';
+                labelsConfigContainer.style.display = 'none';
+                submitBtn.disabled = true;
+            }
+        });
+
+        // Drag and drop logic
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('dragover');
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                fileInput.files = files;
+                // Trigger change event manually
+                const event = new Event('change');
+                fileInput.dispatchEvent(event);
+            }
+        }
+
+        // Handle form submission via fetch
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault(); // Detener el envío normal
+
+            submitBtn.disabled = true;
+            btnText.textContent = 'Procesando...';
+            btnIcon.style.display = 'none';
+            spinner.style.display = 'inline-block';
+            errorAlert.style.display = 'none';
+
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/api/v1/extract', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    let errorMsg = "Ocurrió un error al procesar los archivos.";
+                    try {
+                        const data = await response.json();
+                        if (data.error) errorMsg = data.error;
+                    } catch (e) { }
+
+                    throw new Error(errorMsg);
+                }
+
+                // Extraer el archivo PDF (Blob)
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+
+                // Ocultar barra de herramientas del PDF
+                const previewUrl = url + "#toolbar=0&navpanes=0&scrollbar=0";
+
+                // Mostrar el panel derecho con animación fluida
+                document.getElementById('mainLayout').classList.add('has-result');
+
+                // Configurar visualizador
+                document.getElementById('pdfPreview').src = previewUrl;
+
+                // Configurar botón de descarga
+                const downloadBtn = document.getElementById('downloadBtn');
+                downloadBtn.href = url; // descargar usa la URL normal
+                downloadBtn.download = "etiquetas_optimizadas.pdf";
+
+                // Restaurar botón
+                submitBtn.disabled = false;
+                btnText.textContent = 'Actualizar Etiquetas';
+                btnIcon.style.display = 'inline-block';
+                spinner.style.display = 'none';
+
+            } catch (error) {
+                errorMessage.textContent = error.message;
+                errorAlert.style.display = 'flex';
+
+                submitBtn.disabled = false;
+                btnText.textContent = 'Procesar Etiquetas';
+                btnIcon.style.display = 'inline-block';
+                spinner.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+
+</html>
