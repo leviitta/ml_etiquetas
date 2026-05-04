@@ -3,6 +3,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 from authlib.integrations.starlette_client import OAuth
 from dotenv import load_dotenv
+from app.db.quota import ensure_user
 
 load_dotenv()
 
@@ -39,6 +40,11 @@ async def auth_callback(request: Request):
     user = token.get('userinfo')
     if user:
         request.session['user'] = dict(user)
+        email = user.get("email")
+        name = user.get("name", "")
+        if email:
+            await ensure_user(email, name)
+            
     return RedirectResponse(url='/')
 
 @router.get('/logout')

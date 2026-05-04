@@ -17,3 +17,10 @@ wheels/
 # IDEs
 .vscode/
 .idea/
+
+# Agents & Graphify
+.opencode/
+.agents/
+graphify-out/
+.graphify*
+AGENTS.md

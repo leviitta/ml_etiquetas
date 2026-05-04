@@ -1,7 +1,8 @@
 import fitz  # PyMuPDF
 from pathlib import Path
+from typing import List, Optional
 
-def get_label_rect(page):
+def get_label_rect(page: fitz.Page) -> fitz.Rect:
     """Encuentra y devuelve el bounding box de la etiqueta en la mitad izquierda."""
     rect = page.rect
     half_x = rect.width / 2
@@ -47,83 +48,46 @@ def get_label_rect(page):
     
     return fitz.Rect(min_x, min_y, max_x, max_y)
 
-
-def extract_label_from_pdf(input_pdf_path: str, output_pdf_path: str = None):
-    """
-    Extrae la etiqueta (mitad izquierda de la primera página) de un PDF de MercadoLibre.
-    """
+def extract_label_from_pdf(input_pdf_path: str, output_pdf_path: Optional[str] = None) -> str:
+    """Extrae la etiqueta (mitad izquierda de la primera página) de un PDF."""
     input_path = Path(input_pdf_path)
     if not input_path.exists():
         raise FileNotFoundError(f"No se encontró el archivo: {input_pdf_path}")
         
-    if output_pdf_path is None:
-        output_path = input_path.parent / f"{input_path.stem}_solo_etiqueta.pdf"
-    else:
-        output_path = Path(output_pdf_path)
+    output_path = Path(output_pdf_path) if output_pdf_path else input_path.parent / f"{input_path.stem}_solo_etiqueta.pdf"
 
-    print(f"Procesando: {input_path}")
-    
-    # Abrir el PDF original
-    doc = fitz.open(input_path)
-    
-    if len(doc) == 0:
-        raise ValueError("El PDF está vacío")
-        
-    # Crear un nuevo documento para guardar solo la etiqueta
-    out_doc = fitz.open()
-    
-    # Insertar solo la primera página (índice 0)
-    out_doc.insert_pdf(doc, from_page=0, to_page=0)
-    page = out_doc[0]
-    
-    # Obtener el bounding box de la etiqueta
-    new_rect = get_label_rect(page)
-    page.set_cropbox(new_rect)
-    
-    # Guardar el nuevo PDF
-    out_doc.save(output_path)
-    out_doc.close()
-    doc.close()
-    
-    print(f"¡Éxito! Etiqueta guardada en: {output_path}")
-    return output_path
+    with fitz.open(input_path) as doc:
+        if not doc:
+            raise ValueError("El PDF está vacío")
+            
+        with fitz.open() as out_doc:
+            out_doc.insert_pdf(doc, from_page=0, to_page=0)
+            page = out_doc[0]
+            new_rect = get_label_rect(page)
+            page.set_cropbox(new_rect)
+            out_doc.save(output_path)
+            
+    return str(output_path)
 
-
-def process_multiple_labels(input_paths: list[str], output_path: str, labels_per_page: int):
-    """
-    Procesa múltiples PDFs, extrae la etiqueta de cada uno, y los organiza en una cuadrícula
-    en un nuevo documento PDF con hojas tamaño A4.
-    """
+def process_multiple_labels(input_paths: List[str], output_path: str) -> str:
+    """Procesa múltiples PDFs, extrae la etiqueta y las organiza en una cuadrícula 2x3."""
     merged_doc = fitz.open()
-    a4_rect = fitz.paper_rect("a4")  # Tamaño A4 (Portrait)
+    a4_rect = fitz.paper_rect("a4")
     
-    # Definir la cuadrícula basada en etiquetas por hoja
-    if labels_per_page == 1:
-        rows, cols = 1, 1
-    elif labels_per_page == 2:
-        rows, cols = 1, 2  # Asumo que te referías a 1 fila x 2 columnas para que entren 2
-    elif labels_per_page <= 4:
-        rows, cols = 2, 2
-        labels_per_page = 4
-    else:
-        rows, cols = 2, 3
-        labels_per_page = 6
+    # Cuadrícula fija para Mercado Libre: 6 por hoja (2 filas x 3 columnas)
+    rows, cols = 2, 3
+    labels_per_page = 6
         
     cell_width = a4_rect.width / cols
     cell_height = a4_rect.height / rows
     
-    # Margen entre etiquetas y borde de la página (en puntos)
-    margin_x = 10
-    margin_y = 10
+    margin_x, margin_y = 10, 10
     
-    # Tamaño uniforme para 1 a 6 etiquetas (basado en la celda de 6 por hoja: 2x3)
-    uniform_label_width = a4_rect.width / 3 - 2 * margin_x
-    uniform_label_height = a4_rect.height / 2 - 2 * margin_y
+    label_width = a4_rect.width / 3 - 2 * margin_x
+    label_height = a4_rect.height / 2 - 2 * margin_y
     
     current_page = None
     label_count = 0
-    
-    # Mantener los documentos abiertos hasta guardar
     src_docs = []
     
     try:
@@ -131,13 +95,12 @@ def process_multiple_labels(input_paths: list[str], output_path: str, labels_per
             doc = fitz.open(pdf_path)
             src_docs.append(doc)
             
-            if len(doc) == 0:
+            if not doc:
                 continue
                 
             page = doc[0]
             src_rect = get_label_rect(page)
             
-            # Crear nueva página si es necesario
             if current_page is None or label_count >= labels_per_page:
                 current_page = merged_doc.new_page(width=a4_rect.width, height=a4_rect.height)
                 label_count = 0
@@ -145,23 +108,15 @@ def process_multiple_labels(input_paths: list[str], output_path: str, labels_per
             row = label_count // cols
             col = label_count % cols
             
-            # Determinar el tamaño de la etiqueta a estampar
-            label_width = uniform_label_width
-            label_height = uniform_label_height
-                
-            # Esquina superior izquierda de la celda actual
             cell_start_x = col * cell_width
             cell_start_y = row * cell_height
             
-            # Calcular las coordenadas alineando la etiqueta a la esquina superior izquierda (con margen)
             x0 = cell_start_x + margin_x
             y0 = cell_start_y + margin_y
             x1 = x0 + label_width
             y1 = y0 + label_height
             
             target_rect = fitz.Rect(x0, y0, x1, y1)
-            
-            # Estampar la porción recortada de la etiqueta en la celda correspondiente
             current_page.show_pdf_page(target_rect, doc, 0, clip=src_rect)
             
             label_count += 1

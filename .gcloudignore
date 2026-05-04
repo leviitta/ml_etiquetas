@@ -8,3 +8,9 @@ venv/
 
 # Archivos de Python compilados y caches
 __pycache__/
+# Agents & Graphify
+.opencode/
+.agents/
+graphify-out/
+.graphify*
+AGENTS.md
