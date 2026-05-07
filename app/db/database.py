@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS quota_usage (
 CREATE TABLE IF NOT EXISTS payments (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     email           TEXT NOT NULL,
-    mp_payment_id   TEXT,
+    mp_payment_id   TEXT UNIQUE,
     mp_preference_id TEXT,
     amount          REAL NOT NULL,
     currency        TEXT DEFAULT 'CLP',

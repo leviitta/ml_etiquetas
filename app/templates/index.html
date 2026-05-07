@@ -400,6 +400,11 @@
                     <span id="errorMessage"></span>
                 </div>
 
+                <div id="paymentAlert" class="alert" style="display: none; align-items: center;">
+                    <svg id="paymentAlertIcon" class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 20px; height: 20px; margin-right: 0.75rem; flex-shrink: 0;"></svg>
+                    <span id="paymentMessage"></span>
+                </div>
+
                 {% if user %}
 
                 <!-- UI de Cuota Excedida (Oculto por defecto o renderizado estáticamente) -->
@@ -518,6 +523,43 @@
     </div>
 
     <script>
+        // Check for payment status in URL
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const paymentStatus = urlParams.get('payment');
+            
+            if (paymentStatus) {
+                const alertEl = document.getElementById('paymentAlert');
+                const msgEl = document.getElementById('paymentMessage');
+                const iconEl = document.getElementById('paymentAlertIcon');
+                
+                alertEl.style.display = 'flex';
+                
+                if (paymentStatus === 'success') {
+                    alertEl.style.backgroundColor = 'var(--success-bg)';
+                    alertEl.style.color = 'var(--success-color)';
+                    alertEl.style.border = '1px solid rgba(16, 185, 129, 0.2)';
+                    msgEl.textContent = '¡Pago exitoso! Tu cuenta Premium ya está activa.';
+                    iconEl.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+                } else if (paymentStatus === 'failure') {
+                    alertEl.style.backgroundColor = 'var(--error-bg)';
+                    alertEl.style.color = 'var(--error-color)';
+                    alertEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+                    msgEl.textContent = 'El pago fue rechazado o cancelado. Por favor, intenta nuevamente.';
+                    iconEl.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+                } else if (paymentStatus === 'pending') {
+                    alertEl.style.backgroundColor = 'rgba(245, 158, 11, 0.1)';
+                    alertEl.style.color = '#f59e0b';
+                    alertEl.style.border = '1px solid rgba(245, 158, 11, 0.2)';
+                    msgEl.textContent = 'Tu pago está pendiente. Activaremos tu cuenta Premium en cuanto se acredite.';
+                    iconEl.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+                }
+                
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+
         const fileInput = document.getElementById('fileInput');
         const fileNameDisplay = document.getElementById('fileName');
         const submitBtn = document.getElementById('submitBtn');

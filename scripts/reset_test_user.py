@@ -119,6 +119,22 @@ def resetear_usuario(conn, email: str):
     print(f"   será tratado como usuario completamente nuevo.\n")
 
 
+def quitar_premium(conn, email: str):
+    """Elimina el registro de pago (Premium) del usuario sin borrar su historial."""
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) as cnt FROM payments WHERE email = ?", (email,))
+    pagos = cur.fetchone()["cnt"]
+
+    if not pagos:
+        print(f"⚠️  El usuario '{email}' no tiene una suscripción Premium activa.")
+        return
+
+    print(f"\n💸 Quitando suscripción Premium al usuario: {email}")
+    cur.execute("DELETE FROM payments WHERE email = ?", (email,))
+    conn.commit()
+    print(f"✅ Se eliminó {pagos} pago(s). El usuario vuelve a la cuota gratuita.\n")
+
+
 def resetear_todo(conn):
     """Borra TODOS los registros de todas las tablas (solo dev)."""
     cur = conn.cursor()
@@ -136,6 +152,7 @@ def main():
     parser.add_argument("--email", help="Email del usuario a resetear")
     parser.add_argument("--all",   action="store_true", help="Borrar TODOS los registros")
     parser.add_argument("--show",  action="store_true", help="Solo mostrar estado actual")
+    parser.add_argument("--quitar-premium", action="store_true", help="Quita la suscripción premium del usuario (requiere --email)")
     args = parser.parse_args()
 
     conn = conectar()
@@ -157,7 +174,10 @@ def main():
         else:
             print("Cancelado.")
     elif args.email:
-        resetear_usuario(conn, args.email)
+        if args.quitar_premium:
+            quitar_premium(conn, args.email)
+        else:
+            resetear_usuario(conn, args.email)
         mostrar_estado(conn, args.email)
 
     conn.close()

@@ -52,18 +52,29 @@ async def create_preference(request: Request):
     # auto_return y notification_url solo funcionan con URLs públicas (no localhost)
     is_public = BASE_URL.startswith("https://") and "localhost" not in BASE_URL
 
+    # Separar nombre y apellido para Mercado Pago
+    full_name = user.get("name", "")
+    name_parts = full_name.split(" ", 1)
+    first_name = name_parts[0] if name_parts else ""
+    last_name = name_parts[1] if len(name_parts) > 1 else ""
+
     preference_data = {
         "items": [
             {
                 "id": "quota-mensual",
-                "title": "Cuota mensual – Optimizador Etiquetas ML",
+                "title": "Pago Premium - MeliOps",
                 "description": f"Acceso extendido por {PAYMENT_DAYS} días",
+                "category_id": "services",
                 "quantity": 1,
                 "currency_id": "CLP",
                 "unit_price": PAYMENT_AMOUNT,
             }
         ],
-        "payer": {"email": email},
+        "payer": {
+            "email": email,
+            "name": first_name,
+            "surname": last_name
+        },
         "back_urls": {
             "success": f"{BASE_URL}/api/v1/payments/success",
             "failure": f"{BASE_URL}/api/v1/payments/failure",
@@ -71,6 +82,8 @@ async def create_preference(request: Request):
         },
         "metadata": {"user_email": email},
         "statement_descriptor": "ETIQUETAS ML",
+        "external_reference": email,
+        "binary_mode": True,
     }
 
     # auto_return requiere back_urls públicas con HTTPS
@@ -132,17 +145,17 @@ async def payment_success(request: Request):
         )
         logger.info("Pago aprobado para %s hasta %s", email, valid_until)
 
-    return RedirectResponse(url="/?payment=success")
+    return RedirectResponse(url="/api/v1/?payment=success")
 
 
 @router.get("/failure")
 async def payment_failure(request: Request):
-    return RedirectResponse(url="/?payment=failure")
+    return RedirectResponse(url="/api/v1/?payment=failure")
 
 
 @router.get("/pending")
 async def payment_pending(request: Request):
-    return RedirectResponse(url="/?payment=pending")
+    return RedirectResponse(url="/api/v1/?payment=pending")
 
 
 # ── Webhook IPN ──────────────────────────────────────────────────────────────
