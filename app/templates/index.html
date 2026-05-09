@@ -52,7 +52,7 @@
             color: var(--text-primary);
             min-height: 100vh;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
             padding: 2rem;
             line-height: 1.5;
@@ -64,15 +64,15 @@
             grid-template-columns: 1fr;
             gap: 2rem;
             width: 100%;
-            max-width: 500px;
-            height: calc(100vh - 4rem); /* Viewport height minus padding */
+            max-width: 650px;
+            height: auto; /* Adapts to content */
             max-height: calc(100vh - 4rem);
             transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
             margin: 0 auto;
         }
 
         .panel-left {
-            height: 100%;
+            height: auto;
         }
 
         .panel-right {
@@ -87,9 +87,15 @@
 
         @media (min-width: 900px) {
             .layout-wrapper.has-result {
-                max-width: 1100px;
-                grid-template-columns: 450px 1fr;
-                /* Left panel 450px, right panel fills rest */
+                max-width: 1200px;
+                grid-template-columns: 500px 1fr;
+                /* Left panel 500px, right panel fills rest */
+                height: calc(100vh - 4rem);
+            }
+
+            .layout-wrapper.has-result .panel-left,
+            .layout-wrapper.has-result .panel-left .glass-card {
+                height: 100%;
             }
 
             .layout-wrapper.has-result .panel-right {
@@ -111,7 +117,7 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             display: flex;
             flex-direction: column;
-            height: 100%;
+            height: auto;
             overflow: hidden;
         }
 
@@ -122,7 +128,7 @@
 
         .header {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
             flex-shrink: 0;
         }
 
@@ -154,6 +160,7 @@
             flex-direction: column;
             flex: 1;
             overflow: hidden;
+            gap: 1.5rem;
         }
 
         .upload-area {
@@ -255,7 +262,7 @@
         .alert {
             padding: 1rem;
             border-radius: 12px;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
             font-size: 0.9rem;
@@ -316,6 +323,22 @@
                 transform: translateY(0);
             }
         }
+
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+        }
+
+        .alert.fade-out {
+            animation: slideOut 0.3s ease forwards;
+        }
     </style>
 </head>
 
@@ -343,7 +366,7 @@
 
                     {% if quota_status %}
                     <div
-                        style="margin-top: 1.5rem; margin-bottom: 1.5rem; background: rgba(30, 41, 59, 0.8); padding: 1.25rem; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);">
+                        style="margin-top: 1rem; background: rgba(30, 41, 59, 0.8); padding: 1.25rem; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);">
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -379,11 +402,18 @@
                                 style="height: 100%; background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%); width: {{ percentage }}%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);">
                             </div>
                         </div>
-                        {% if not quota_status.has_active_payment and percentage >= 80 %}
-                        <div
-                            style="margin-top: 0.75rem; text-align: right; font-size: 0.75rem; color: var(--accent-primary);">
-                            ¡Te acercas al límite! 🚀
-                        </div>
+                        {% if not quota_status.has_active_payment %}
+                            {% if percentage >= 100 %}
+                            <div
+                                style="margin-top: 0.75rem; text-align: right; font-size: 0.75rem; color: var(--error-color); font-weight: 600;">
+                                ¡Llegaste al límite! 🛑
+                            </div>
+                            {% elif percentage >= 50 %}
+                            <div
+                                style="margin-top: 0.75rem; text-align: right; font-size: 0.75rem; color: var(--accent-primary);">
+                                ¡Te acercas al límite! 🚀
+                            </div>
+                            {% endif %}
                         {% endif %}
                     </div>
                     {% endif %}
@@ -409,13 +439,13 @@
 
                 <!-- UI de Cuota Excedida (Oculto por defecto o renderizado estáticamente) -->
                 <div id="quotaExceededUI"
-                    style="{% if quota_status and not quota_status.can_upload %}display: block;{% else %}display: none;{% endif %} text-align: center; background: rgba(30, 41, 59, 0.5); padding: 3rem 2rem; border-radius: 16px; border: 1px dashed rgba(139, 92, 246, 0.4); margin-top: 1rem; backdrop-filter: blur(10px);">
-                    <div style="font-size: 4rem; margin-bottom: 1rem; animation: float 3s ease-in-out infinite;">🚀
+                    style="{% if quota_status and not quota_status.can_upload %}display: block;{% else %}display: none;{% endif %} text-align: center; background: rgba(30, 41, 59, 0.5); padding: 1.5rem 1rem; border-radius: 16px; border: 1px dashed rgba(139, 92, 246, 0.4); backdrop-filter: blur(10px);">
+                    <div style="font-size: 3rem; margin-bottom: 0.5rem; animation: float 3s ease-in-out infinite;">🚀
                     </div>
                     <h2
                         style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; background: linear-gradient(to right, #60a5fa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                         ¡Límite de cuota alcanzado!</h2>
-                    <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.6;">
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.95rem; line-height: 1.6;">
                         Has utilizado todos los documentos gratuitos por hoy. Actualiza tu plan para procesar etiquetas
                         de forma ilimitada y sin interrupciones.</p>
 
@@ -523,6 +553,28 @@
     </div>
 
     <script>
+        function showAutoDismissAlert(alertElement) {
+            // Limpiar temporizadores previos del mismo elemento
+            if (alertElement.hideTimeout) clearTimeout(alertElement.hideTimeout);
+            if (alertElement.removeTimeout) clearTimeout(alertElement.removeTimeout);
+
+            // Restaurar para que se vuelva a mostrar
+            alertElement.classList.remove('fade-out');
+            alertElement.style.display = 'flex';
+
+            alertElement.hideTimeout = setTimeout(() => {
+                // Inicia la transición suave de salida
+                alertElement.classList.add('fade-out');
+                
+                // Espera a que termine la animación (300ms) para quitarlo del DOM
+                alertElement.removeTimeout = setTimeout(() => {
+                    alertElement.style.display = 'none';
+                    alertElement.classList.remove('fade-out');
+                }, 300);
+                
+            }, 4000);
+        }
+
         // Check for payment status in URL
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -533,7 +585,7 @@
                 const msgEl = document.getElementById('paymentMessage');
                 const iconEl = document.getElementById('paymentAlertIcon');
                 
-                alertEl.style.display = 'flex';
+                showAutoDismissAlert(alertEl);
                 
                 if (paymentStatus === 'success') {
                     alertEl.style.backgroundColor = 'var(--success-bg)';
@@ -572,9 +624,20 @@
         const errorMessage = document.getElementById('errorMessage');
         const labelsConfigContainer = document.getElementById('labelsConfigContainer');
 
+        const remainingQuota = {% if quota_status %}{{ (quota_status.monthly_limit - quota_status.used_month) if quota_status.has_active_payment else (quota_status.daily_limit - quota_status.used_today) }}{% else %}0{% endif %};
+
         fileInput.addEventListener('change', function (e) {
             const files = this.files;
             if (files && files.length > 0) {
+                if (remainingQuota > 0 && files.length > remainingQuota) {
+                    errorMessage.textContent = `Has seleccionado ${files.length} documentos, pero solo te quedan ${remainingQuota} disponibles en tu cuota. Por favor selecciona menos archivos.`;
+                    showAutoDismissAlert(errorAlert);
+                    fileNameDisplay.style.display = 'none';
+                    submitBtn.disabled = true;
+                    this.value = ''; // Limpiar el input
+                    return;
+                }
+
                 if (files.length === 1) {
                     fileNameDisplay.textContent = files[0].name;
                 } else {
@@ -667,25 +730,29 @@
                 });
 
                 if (!response.ok) {
-                    if (response.status === 403) {
-                        // Cuota excedida: Esconder Drag & Drop y Mostrar Empty State Premium
-                        document.getElementById('uploadUI').style.display = 'none';
-                        document.getElementById('quotaExceededUI').style.display = 'block';
-
-                        // Detener UI de carga
-                        submitBtn.disabled = false;
-                        btnText.textContent = 'Procesar Etiquetas';
-                        btnIcon.style.display = 'inline-block';
-                        spinner.style.display = 'none';
-
-                        throw new Error("QUOTA_EXCEEDED"); // Salir del flujo normal sin tirar error genérico
-                    }
-
                     let errorMsg = "Ocurrió un error al procesar los archivos.";
                     try {
                         const data = await response.json();
                         if (data.error) errorMsg = data.error;
                     } catch (e) { }
+
+                    if (response.status === 403) {
+                        if (errorMsg === "Ya has alcanzado el límite de tu cuota.") {
+                            // Cuota excedida: Esconder Drag & Drop y Mostrar Empty State Premium
+                            document.getElementById('uploadUI').style.display = 'none';
+                            document.getElementById('quotaExceededUI').style.display = 'block';
+
+                            // Detener UI de carga
+                            submitBtn.disabled = false;
+                            btnText.textContent = 'Procesar Etiquetas';
+                            btnIcon.style.display = 'inline-block';
+                            spinner.style.display = 'none';
+
+                            throw new Error("QUOTA_EXCEEDED"); // Salir del flujo normal sin tirar error genérico
+                        } else {
+                            throw new Error(errorMsg);
+                        }
+                    }
 
                     throw new Error(errorMsg);
                 }
@@ -717,8 +784,8 @@
             } catch (error) {
                 if (error.message !== "QUOTA_EXCEEDED") {
                     errorMessage.textContent = error.message;
+                    showAutoDismissAlert(errorAlert);
                 }
-                errorAlert.style.display = 'flex';
 
                 submitBtn.disabled = false;
                 btnText.textContent = 'Procesar Etiquetas';

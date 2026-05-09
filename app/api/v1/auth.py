@@ -22,10 +22,8 @@ oauth.register(
 
 @router.get('/login')
 async def login(request: Request):
-    redirect_uri = os.getenv(
-        'REDIRECT_URI',
-        str(request.url_for('auth_callback'))
-    )
+    client_base_url = str(request.base_url).rstrip("/")
+    redirect_uri = f"{client_base_url}/api/v1/auth/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @router.get('/callback', name='auth_callback')
@@ -34,7 +32,7 @@ async def auth_callback(request: Request):
         token = await oauth.google.authorize_access_token(request)
     except Exception as e:
         # User might have denied access
-        return RedirectResponse(url='/')
+        return RedirectResponse(url='/api/v1/')
     
     # Obtenemos la info del usuario
     user = token.get('userinfo')
@@ -45,9 +43,9 @@ async def auth_callback(request: Request):
         if email:
             await ensure_user(email, name)
             
-    return RedirectResponse(url='/')
+    return RedirectResponse(url='/api/v1/')
 
 @router.get('/logout')
 async def logout(request: Request):
     request.session.pop('user', None)
-    return RedirectResponse(url='/')
+    return RedirectResponse(url='/api/v1/')

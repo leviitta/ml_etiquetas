@@ -58,6 +58,8 @@ async def create_preference(request: Request):
     first_name = name_parts[0] if name_parts else ""
     last_name = name_parts[1] if len(name_parts) > 1 else ""
 
+    client_base_url = str(request.base_url).rstrip("/")
+
     preference_data = {
         "items": [
             {
@@ -76,9 +78,9 @@ async def create_preference(request: Request):
             "surname": last_name
         },
         "back_urls": {
-            "success": f"{BASE_URL}/api/v1/payments/success",
-            "failure": f"{BASE_URL}/api/v1/payments/failure",
-            "pending": f"{BASE_URL}/api/v1/payments/pending",
+            "success": f"{client_base_url}/api/v1/payments/success",
+            "failure": f"{client_base_url}/api/v1/payments/failure",
+            "pending": f"{client_base_url}/api/v1/payments/pending",
         },
         "metadata": {"user_email": email},
         "statement_descriptor": "ETIQUETAS ML",
