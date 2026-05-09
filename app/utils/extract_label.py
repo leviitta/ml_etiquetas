@@ -95,7 +95,7 @@ def process_multiple_labels(input_paths: List[str], output_path: str) -> str:
             doc = fitz.open(pdf_path)
             src_docs.append(doc)
             
-            if not doc:
+            if len(doc) == 0:
                 continue
                 
             page = doc[0]

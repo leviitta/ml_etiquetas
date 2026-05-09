@@ -1,3 +1,9 @@
+import os
+import logging
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from app.api.v1.endpoints import router as extract_router
@@ -6,10 +12,16 @@ from app.api.v1.payments import router as payments_router
 from app.db.database import init_db
 from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
+# Setup Google Cloud Logging if in GCP environment
+try:
+    import google.cloud.logging
+    client = google.cloud.logging.Client()
+    client.setup_logging()
+    logging.info("Google Cloud Logging successfully configured.")
+except Exception as e:
+    logging.basicConfig(level=logging.INFO)
+    logging.info("Running locally or without GCP credentials, standard logging configured.")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

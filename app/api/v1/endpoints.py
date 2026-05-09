@@ -11,6 +11,10 @@ from app.db.quota import get_quota_status, verify_quota_for_batch, register_usag
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
+def format_price(amount: float) -> str:
+    """Format price to a string like 4.990"""
+    return f"{int(amount):,}".replace(",", ".")
+
 @router.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
     """Render the upload form"""
@@ -19,10 +23,16 @@ async def get_index(request: Request):
     if user and user.get("email"):
         quota_status = await get_quota_status(user["email"])
         
+    prices = {
+        "premium": format_price(float(os.getenv("PAYMENT_PREMIUM_AMOUNT", "4990"))),
+        "unlimited": format_price(float(os.getenv("PAYMENT_UNLIMITED_AMOUNT", "12990"))),
+        "upgrade": format_price(float(os.getenv("PAYMENT_UPGRADE_AMOUNT", "8000")))
+    }
+        
     return templates.TemplateResponse(
         request=request, 
         name="index.html", 
-        context={"user": user, "quota_status": quota_status}
+        context={"user": user, "quota_status": quota_status, "prices": prices}
     )
 
 @router.post("/extract")

@@ -1,187 +1,171 @@
 """
-reset_test_user.py — Script de pruebas para resetear un usuario en la BD local.
+reset_test_user.py — Script de pruebas para resetear un usuario en la BD Postgres.
 
 Uso:
-    uv run python scripts/reset_test_user.py                     # muestra estado actual
-    uv run python scripts/reset_test_user.py --email tu@email.com  # resetea ese usuario
-    uv run python scripts/reset_test_user.py --all               # borra TODOS los registros
+    python3 scripts/reset_test_user.py                     # muestra estado actual
+    python3 scripts/reset_test_user.py --email tu@email.com  # resetea ese usuario
+    python3 scripts/reset_test_user.py --all               # borra TODOS los registros
 
 Opciones:
     --email EMAIL   Email del usuario a resetear
     --all           Borra todos los usuarios (solo en dev)
-    --show          Solo muestra el estado actual de la BD (default si no se pasa nada)
+    --show          Solo muestra el estado actual de la BD
 """
 import argparse
-import sqlite3
+import asyncpg
+import asyncio
 import os
 import sys
-from pathlib import Path
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Forzar UTF-8 en la terminal de Windows
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8")
 
-# Ruta de la BD (igual que en database.py)
-DB_PATH = os.getenv("DB_PATH", "app/db/app.db")
+_db_user = os.getenv("DB_USER", "postgres")
+_db_password = os.getenv("DB_PASSWORD", "mypassword123")
+_db_name = os.getenv("DB_NAME", "mldb")
 
+_env_url = os.getenv("DATABASE_URL")
+if not _env_url or "${DB_USER}" in _env_url:
+    DATABASE_URL = f"postgresql://{_db_user}:{_db_password}@localhost/{_db_name}"
+else:
+    DATABASE_URL = _env_url
 
-def conectar():
-    if not Path(DB_PATH).exists():
-        print(f"❌ No existe la base de datos en: {DB_PATH}")
-        print("   Inicia el servidor al menos una vez para crearla.")
+async def conectar():
+    try:
+        conn = await asyncpg.connect(DATABASE_URL)
+        return conn
+    except Exception as e:
+        print(f"❌ Error conectando a PostgreSQL: {e}")
+        print("   Asegúrate de que DATABASE_URL sea correcta y la BD esté corriendo.")
         sys.exit(1)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
 
-
-def mostrar_estado(conn, email: str = None):
-    """Muestra un resumen de los registros actuales."""
-    cur = conn.cursor()
-
+async def mostrar_estado(conn, email: str = None):
     print("\n" + "─" * 55)
     print("  📊  ESTADO ACTUAL DE LA BASE DE DATOS")
     print("─" * 55)
 
-    # Usuarios
     if email:
-        cur.execute("SELECT * FROM users WHERE email = ?", (email,))
+        users = await conn.fetch("SELECT * FROM users WHERE email = $1", email)
     else:
-        cur.execute("SELECT * FROM users")
-    users = cur.fetchall()
+        users = await conn.fetch("SELECT * FROM users")
+        
     print(f"\n👤 Usuarios ({len(users)}):")
     for u in users:
         print(f"   • {u['email']}  —  {u['name']}  (desde {u['created_at']})")
 
-    # Usos de cuota
     if email:
-        cur.execute("SELECT COUNT(*) as cnt FROM quota_usage WHERE email = ?", (email,))
-        cur2 = conn.cursor()
-        cur2.execute(
-            "SELECT COUNT(*) as cnt FROM quota_usage WHERE email = ? AND date(used_at) = date('now')",
-            (email,)
+        from datetime import timezone
+        from zoneinfo import ZoneInfo
+        chile_tz = ZoneInfo("America/Santiago")
+        now_chile = datetime.now(timezone.utc).astimezone(chile_tz)
+        today_date = now_chile.date()
+        
+        total = await conn.fetchval("SELECT COUNT(*) FROM quota_usage WHERE email = $1", email)
+        hoy = await conn.fetchval(
+            "SELECT COUNT(*) FROM quota_usage WHERE email = $1 AND DATE(used_at AT TIME ZONE 'America/Santiago') = $2",
+            email, today_date
         )
-        total = cur.fetchone()["cnt"]
-        hoy   = cur2.fetchone()["cnt"]
         print(f"\n📄 Documentos procesados (cuota):")
         print(f"   • Total: {total}   |   Hoy: {hoy}")
     else:
-        cur.execute(
-            "SELECT email, COUNT(*) as total FROM quota_usage GROUP BY email"
-        )
-        usos = cur.fetchall()
+        usos = await conn.fetch("SELECT email, COUNT(*) as total FROM quota_usage GROUP BY email")
         print(f"\n📄 Usos de cuota ({sum(u['total'] for u in usos)} registros):")
         for u in usos:
             print(f"   • {u['email']}:  {u['total']} docs")
 
-    # Pagos
     if email:
-        cur.execute("SELECT * FROM payments WHERE email = ?", (email,))
+        pagos = await conn.fetch("SELECT * FROM payments WHERE email = $1", email)
     else:
-        cur.execute("SELECT * FROM payments")
-    pagos = cur.fetchall()
+        pagos = await conn.fetch("SELECT * FROM payments")
+        
     print(f"\n💳 Pagos ({len(pagos)}):")
     for p in pagos:
-        print(f"   • {p['email']}  status={p['status']}  válido hasta={p['valid_until']}")
+        plan = p['plan_type'] if 'plan_type' in dict(p) else 'premium'
+        print(f"   • {p['email']}  plan={plan}  status={p['status']}  válido hasta={p['valid_until']}")
 
     print("\n" + "─" * 55 + "\n")
 
-
-def resetear_usuario(conn, email: str):
-    """Elimina todos los registros del usuario indicado."""
-    cur = conn.cursor()
-
-    # Contar antes
-    cur.execute("SELECT COUNT(*) as cnt FROM quota_usage WHERE email = ?", (email,))
-    usos = cur.fetchone()["cnt"]
-    cur.execute("SELECT COUNT(*) as cnt FROM payments WHERE email = ?", (email,))
-    pagos = cur.fetchone()["cnt"]
-    cur.execute("SELECT COUNT(*) as cnt FROM users WHERE email = ?", (email,))
-    existe = cur.fetchone()["cnt"]
+async def resetear_usuario(conn, email: str):
+    existe = await conn.fetchval("SELECT COUNT(*) FROM users WHERE email = $1", email)
 
     if not existe:
         print(f"⚠️  El usuario '{email}' no existe en la BD.")
         return
 
+    usos = await conn.fetchval("SELECT COUNT(*) FROM quota_usage WHERE email = $1", email)
+    pagos = await conn.fetchval("SELECT COUNT(*) FROM payments WHERE email = $1", email)
+
     print(f"\n🗑️  Reseteando usuario: {email}")
     print(f"   Eliminando {usos} registro(s) de quota_usage...")
-    cur.execute("DELETE FROM quota_usage WHERE email = ?", (email,))
+    await conn.execute("DELETE FROM quota_usage WHERE email = $1", email)
 
     print(f"   Eliminando {pagos} registro(s) de payments...")
-    cur.execute("DELETE FROM payments WHERE email = ?", (email,))
+    await conn.execute("DELETE FROM payments WHERE email = $1", email)
 
     print(f"   Eliminando usuario de la tabla users...")
-    cur.execute("DELETE FROM users WHERE email = ?", (email,))
+    await conn.execute("DELETE FROM users WHERE email = $1", email)
 
-    conn.commit()
-    print(f"\n✅ Usuario '{email}' reseteado. La próxima vez que inicie sesión")
-    print(f"   será tratado como usuario completamente nuevo.\n")
+    print(f"\n✅ Usuario '{email}' reseteado.\n")
 
-
-def quitar_premium(conn, email: str):
-    """Elimina el registro de pago (Premium) del usuario sin borrar su historial."""
-    cur = conn.cursor()
-    cur.execute("SELECT COUNT(*) as cnt FROM payments WHERE email = ?", (email,))
-    pagos = cur.fetchone()["cnt"]
+async def quitar_plan_pago(conn, email: str):
+    pagos = await conn.fetchval("SELECT COUNT(*) FROM payments WHERE email = $1", email)
 
     if not pagos:
-        print(f"⚠️  El usuario '{email}' no tiene una suscripción Premium activa.")
+        print(f"⚠️  El usuario '{email}' no tiene un plan de pago activo.")
         return
 
-    print(f"\n💸 Quitando suscripción Premium al usuario: {email}")
-    cur.execute("DELETE FROM payments WHERE email = ?", (email,))
-    conn.commit()
+    print(f"\n💸 Quitando plan de pago activo al usuario: {email}")
+    await conn.execute("DELETE FROM payments WHERE email = $1", email)
     print(f"✅ Se eliminó {pagos} pago(s). El usuario vuelve a la cuota gratuita.\n")
 
-
-def resetear_todo(conn):
-    """Borra TODOS los registros de todas las tablas (solo dev)."""
-    cur = conn.cursor()
-    cur.execute("DELETE FROM quota_usage")
-    cur.execute("DELETE FROM payments")
-    cur.execute("DELETE FROM users")
-    conn.commit()
+async def resetear_todo(conn):
+    await conn.execute("DELETE FROM quota_usage")
+    await conn.execute("DELETE FROM payments")
+    await conn.execute("DELETE FROM users")
     print("\n✅ Base de datos limpiada completamente.\n")
 
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Herramienta de dev para resetear usuarios en la BD local."
-    )
+async def run_main():
+    parser = argparse.ArgumentParser(description="Resetear usuarios en Postgres.")
     parser.add_argument("--email", help="Email del usuario a resetear")
     parser.add_argument("--all",   action="store_true", help="Borrar TODOS los registros")
     parser.add_argument("--show",  action="store_true", help="Solo mostrar estado actual")
-    parser.add_argument("--quitar-premium", action="store_true", help="Quita la suscripción premium del usuario (requiere --email)")
+    parser.add_argument("--quitar-plan", action="store_true", help="Quita el plan de pago")
     args = parser.parse_args()
 
-    conn = conectar()
+    conn = await conectar()
 
-    # Sin argumentos → solo mostrar
-    if not args.email and not args.all:
-        mostrar_estado(conn)
-        return
+    try:
+        if not args.email and not args.all:
+            await mostrar_estado(conn)
+            return
 
-    if args.show or (args.email and not args.all):
-        if args.email:
-            mostrar_estado(conn, args.email)
+        if args.show or (args.email and not args.all):
+            if args.email:
+                await mostrar_estado(conn, args.email)
 
-    if args.all:
-        confirmar = input("⚠️  ¿Borrar TODOS los usuarios y registros? (s/N): ").strip().lower()
-        if confirmar == "s":
-            resetear_todo(conn)
-            mostrar_estado(conn)
-        else:
-            print("Cancelado.")
-    elif args.email:
-        if args.quitar_premium:
-            quitar_premium(conn, args.email)
-        else:
-            resetear_usuario(conn, args.email)
-        mostrar_estado(conn, args.email)
+        if args.all:
+            confirmar = input("⚠️  ¿Borrar TODOS los usuarios y registros? (s/N): ").strip().lower()
+            if confirmar == "s":
+                await resetear_todo(conn)
+                await mostrar_estado(conn)
+            else:
+                print("Cancelado.")
+        elif args.email:
+            if args.quitar_plan:
+                await quitar_plan_pago(conn, args.email)
+            else:
+                await resetear_usuario(conn, args.email)
+            await mostrar_estado(conn, args.email)
+    finally:
+        await conn.close()
 
-    conn.close()
-
+def main():
+    asyncio.run(run_main())
 
 if __name__ == "__main__":
     main()
