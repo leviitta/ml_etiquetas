@@ -56,7 +56,7 @@ async def init_db() -> None:
                 currency        TEXT DEFAULT 'CLP',
                 status          TEXT DEFAULT 'pending',
                 valid_until     TEXT,
-                plan_type       TEXT DEFAULT 'premium',
+                plan_type       TEXT DEFAULT 'pro',
                 created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
             """)

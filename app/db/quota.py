@@ -41,8 +41,8 @@ async def get_quota_status(email: str) -> dict:
         )
         
         has_active_payment = len(payments) > 0
-        premium_count = 0
-        unlimited_active = False
+        pro_count = 0
+        infinity_active = False
         latest_valid_until = None
         oldest_active_payment_date = None
         
@@ -53,19 +53,20 @@ async def get_quota_status(email: str) -> dict:
             if oldest_active_payment_date is None or p["created_at"] < oldest_active_payment_date:
                 oldest_active_payment_date = p["created_at"]
             
-            plan = p["plan_type"] if "plan_type" in dict(p) else "premium"
+            plan = p["plan_type"] if "plan_type" in dict(p) else "pro"
             
-            if plan == "unlimited":
-                unlimited_active = True
+            if plan == "infinity":
+                infinity_active = True
             else:
-                premium_count += 1
+                pro_count += 1
 
         payment_valid_until = latest_valid_until
-        active_plan_type = "unlimited" if unlimited_active else ("premium" if premium_count > 0 else "free")
+        active_plan_type = "infinity" if infinity_active else ("pro" if pro_count > 0 else "starter")
 
         # --- CÁLCULO DEL CICLO ("MES") ---
         if has_active_payment and oldest_active_payment_date:
-            cycle_start_ts = oldest_active_payment_date
+            oldest_chile = oldest_active_payment_date.astimezone(chile_tz)
+            cycle_start_ts = datetime.combine(oldest_chile.date(), datetime.min.time(), tzinfo=chile_tz)
         else:
             first_use = await db.fetchval(
                 "SELECT MIN(used_at) FROM quota_usage WHERE email = $1",
@@ -92,12 +93,12 @@ async def get_quota_status(email: str) -> dict:
         )
 
     # Lógica de cuotas según plan
-    if active_plan_type == "unlimited":
+    if active_plan_type == "infinity":
         monthly_limit = 999999
         daily_limit   = 999999
     else:
-        monthly_limit = FREE_MONTHLY_QUOTA + (PAID_MONTHLY_QUOTA * premium_count)
-        daily_limit   = FREE_DAILY_QUOTA if active_plan_type == "free" else monthly_limit
+        monthly_limit = FREE_MONTHLY_QUOTA + (PAID_MONTHLY_QUOTA * pro_count)
+        daily_limit   = FREE_DAILY_QUOTA if active_plan_type == "starter" else 999999
 
     can_upload = True
     reason = None
@@ -144,7 +145,7 @@ async def verify_quota_for_batch(email: str, num_files: int):
     if num_files > remaining_today:
         raise QuotaExceededException(
             reason="daily",
-            detail=f"Solo te quedan {remaining_today} documento(s) disponibles hoy. Estás intentando subir {num_files}.",
+            detail=f"Solo te quedan {remaining_today} etiqueta(s) disponibles hoy. Estás intentando subir {num_files}.",
             quota_status=quota
         )
 
@@ -152,7 +153,7 @@ async def verify_quota_for_batch(email: str, num_files: int):
     if num_files > remaining_month:
         raise QuotaExceededException(
             reason="monthly",
-            detail=f"Solo te quedan {remaining_month} documento(s) disponibles este mes. Estás intentando subir {num_files}.",
+            detail=f"Solo te quedan {remaining_month} etiqueta(s) disponibles este mes. Estás intentando subir {num_files}.",
             quota_status=quota
         )
 
@@ -169,7 +170,7 @@ async def register_payment(
     amount: float,
     valid_until: str,
     status: str = "approved",
-    plan_type: str = "premium",
+    plan_type: str = "pro",
 ):
     async with get_db() as db:
         await db.execute(

@@ -24,8 +24,8 @@ async def get_index(request: Request):
         quota_status = await get_quota_status(user["email"])
         
     prices = {
-        "premium": format_price(float(os.getenv("PAYMENT_PREMIUM_AMOUNT", "4990"))),
-        "unlimited": format_price(float(os.getenv("PAYMENT_UNLIMITED_AMOUNT", "12990"))),
+        "pro": format_price(float(os.getenv("PAYMENT_PRO_AMOUNT", "4990"))),
+        "infinity": format_price(float(os.getenv("PAYMENT_INFINITY_AMOUNT", "12990"))),
         "upgrade": format_price(float(os.getenv("PAYMENT_UPGRADE_AMOUNT", "8000")))
     }
         

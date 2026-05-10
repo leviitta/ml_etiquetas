@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN", "")
-PAYMENT_PREMIUM_AMOUNT = float(os.getenv("PAYMENT_PREMIUM_AMOUNT", "4990"))
-PAYMENT_UNLIMITED_AMOUNT = float(os.getenv("PAYMENT_UNLIMITED_AMOUNT", "12990"))
+PAYMENT_PRO_AMOUNT = float(os.getenv("PAYMENT_PRO_AMOUNT", "4990"))
+PAYMENT_INFINITY_AMOUNT = float(os.getenv("PAYMENT_INFINITY_AMOUNT", "12990"))
 PAYMENT_UPGRADE_AMOUNT = float(os.getenv("PAYMENT_UPGRADE_AMOUNT", "8000"))
 PAYMENT_DAYS    = int(os.getenv("PAYMENT_DAYS", "30"))
 BASE_URL        = os.getenv("BASE_URL", "http://localhost:8000")
@@ -58,23 +58,29 @@ async def create_preference(request: Request):
     except Exception:
         pass
     
-    target_plan = body.get("plan_type", "premium")
+    target_plan = body.get("plan_type", "pro")
+    email = user.get("email")
+
+    current_plan = "starter"
     quota_status = await get_quota_status(email)
-    current_plan = quota_status.get("active_plan_type", "free")
-    
-    # Definir precios según el plan
-    if target_plan == "unlimited":
-        if current_plan == "premium":
-            final_amount = PAYMENT_UPGRADE_AMOUNT  # Pago de la diferencia
+    if quota_status:
+        current_plan = quota_status.get("active_plan_type", "starter")
+
+    plan_desc = f"Acceso extendido por {PAYMENT_DAYS} días"
+
+    if target_plan == "infinity":
+        if current_plan == "pro":
+            # Upgrading from Pro to Infinity
+            plan_title = "Upgrade a Plan Infinity - MeliOps"
+            final_amount = PAYMENT_UPGRADE_AMOUNT
         else:
-            final_amount = PAYMENT_UNLIMITED_AMOUNT
-        plan_title = "Plan Sin Límites - MeliOps"
-        plan_desc = f"Acceso ilimitado por {PAYMENT_DAYS} días"
+            plan_title = "Plan Infinity - MeliOps"
+            final_amount = PAYMENT_INFINITY_AMOUNT
     else:
-        target_plan = "premium" # Fallback por seguridad
-        final_amount = PAYMENT_PREMIUM_AMOUNT
-        plan_title = "Plan Premium - MeliOps"
-        plan_desc = f"Acceso extendido por {PAYMENT_DAYS} días"
+        # For simplicity, if not Infinity, default to Pro
+        target_plan = "pro" # Fallback por seguridad
+        final_amount = PAYMENT_PRO_AMOUNT
+        plan_title = "Plan Pro - MeliOps"
 
     # auto_return y notification_url solo funcionan con URLs públicas (no localhost)
     is_public = BASE_URL.startswith("https://") and "localhost" not in BASE_URL
@@ -164,8 +170,8 @@ async def payment_success(request: Request):
 
     if email and status == "approved":
         # Check plan type from preference metadata directly via MP API
-        plan_type = "premium"
-        final_amount = PAYMENT_PREMIUM_AMOUNT
+        plan_type = "pro"
+        final_amount = PAYMENT_PRO_AMOUNT
         if payment_id and MP_ACCESS_TOKEN:
             try:
                 async with httpx.AsyncClient() as client:
@@ -184,13 +190,13 @@ async def payment_success(request: Request):
                     logger.warning(f"Intento de fraude o pago no aprobado: {payment_id}")
                     return RedirectResponse(url="/api/v1/?payment=failure")
                 
-                plan_type = payment_data.get("metadata", {}).get("plan_type", "premium")
+                plan_type = payment_data.get("metadata", {}).get("plan_type", "pro")
                 
-                # Assign final amount based on plan type fallback if not present in API call
-                if plan_type == "unlimited":
-                    fallback_amount = PAYMENT_UNLIMITED_AMOUNT
+                # Check for actual payment status from API (security measure)
+                if plan_type == "infinity":
+                    fallback_amount = PAYMENT_INFINITY_AMOUNT
                 else:
-                    fallback_amount = PAYMENT_PREMIUM_AMOUNT
+                    fallback_amount = PAYMENT_PRO_AMOUNT
 
                 final_amount = float(payment_data.get("transaction_amount", fallback_amount))
             except Exception as e:
@@ -260,17 +266,17 @@ async def payment_webhook(request: Request):
     status      = payment.get("status", "")
     payer_email = payment.get("payer", {}).get("email", "")
     user_email  = payment.get("metadata", {}).get("user_email", payer_email)
-    plan_type   = payment.get("metadata", {}).get("plan_type", "premium")
+    plan_type   = payment.get("metadata", {}).get("plan_type", "pro")
     pref_id     = payment.get("preference_id", "")
 
     if status == "approved" and user_email:
         valid_until = (datetime.now(timezone.utc) + timedelta(days=PAYMENT_DAYS)).isoformat()
         await ensure_user(user_email)
         
-        if plan_type == "unlimited":
-            fallback_amount = PAYMENT_UNLIMITED_AMOUNT
+        if plan_type == "infinity":
+            fallback_amount = PAYMENT_INFINITY_AMOUNT
         else:
-            fallback_amount = PAYMENT_PREMIUM_AMOUNT
+            fallback_amount = PAYMENT_PRO_AMOUNT
             
         await register_payment(
             email=user_email,

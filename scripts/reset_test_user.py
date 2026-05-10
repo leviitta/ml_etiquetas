@@ -70,7 +70,7 @@ async def mostrar_estado(conn, email: str = None):
             "SELECT COUNT(*) FROM quota_usage WHERE email = $1 AND DATE(used_at AT TIME ZONE 'America/Santiago') = $2",
             email, today_date
         )
-        print(f"\n📄 Documentos procesados (cuota):")
+        print(f"\n📄 Etiquetas procesadas (cuota):")
         print(f"   • Total: {total}   |   Hoy: {hoy}")
     else:
         usos = await conn.fetch("SELECT email, COUNT(*) as total FROM quota_usage GROUP BY email")

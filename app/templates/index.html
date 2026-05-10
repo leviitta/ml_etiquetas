@@ -56,7 +56,6 @@
             justify-content: center;
             padding: 2rem;
             line-height: 1.5;
-            overflow: hidden; /* Prevent scrolling entirely */
         }
 
         .layout-wrapper {
@@ -66,7 +65,7 @@
             width: 100%;
             max-width: 650px;
             height: auto; /* Adapts to content */
-            max-height: calc(100vh - 4rem);
+            min-height: calc(100vh - 4rem);
             transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
             margin: 0 auto;
         }
@@ -360,75 +359,88 @@
                             sesión</a>
                     </div>
                     {% endif %}
-                    <h1>MeliOps</h1>
-                    {% if user and quota_status %}
-                    <div style="display: inline-flex; align-items: center; justify-content: center; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;
-                        {% if quota_status.active_plan_type == 'unlimited' %}
-                            background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
-                        {% elif quota_status.active_plan_type == 'premium' %}
-                            background: rgba(34, 197, 94, 0.1); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2);
-                        {% else %}
-                            background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2);
-                        {% endif %}">
-                        
-                        {% if quota_status.active_plan_type == 'unlimited' %}
-                            <svg style="width: 14px; height: 14px; margin-right: 4px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                            Plan Sin Límites
-                        {% elif quota_status.active_plan_type == 'premium' %}
-                            <svg style="width: 14px; height: 14px; margin-right: 4px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            Plan Premium
-                        {% else %}
-                            Plan Gratis
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 0.5rem;">
+                        <h1 style="margin-bottom: 0;">MeliOps</h1>
+                        {% if user and quota_status %}
+                        <div style="display: inline-flex; align-items: center; justify-content: center; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.85rem; font-weight: 600; margin-bottom: 0;
+                            {% if quota_status.active_plan_type == 'infinity' %}
+                                background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+                            {% elif quota_status.active_plan_type == 'pro' %}
+                                background: rgba(34, 197, 94, 0.1); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2);
+                            {% else %}
+                                background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2);
+                            {% endif %}">
+                            
+                            {% if quota_status.active_plan_type == 'infinity' %}
+                                <svg style="width: 14px; height: 14px; margin-right: 4px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                Plan Infinity
+                            {% elif quota_status.active_plan_type == 'pro' %}
+                                <svg style="width: 14px; height: 14px; margin-right: 4px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Plan Pro
+                            {% else %}
+                                Plan Starter
+                            {% endif %}
+                        </div>
                         {% endif %}
                     </div>
-                    {% endif %}
                     {% if user %}
-                    <p style="margin-top: 0.5rem;">Sube tus PDF's para optimizar la impresión de etiquetas</p>
 
                     {% if quota_status %}
+                        {% if quota_status.active_plan_type == 'infinity' %}
+                            {% set percentage = 100 %}
+                        {% elif quota_status.active_plan_type == 'pro' %}
+                            {% set percentage = (quota_status.used_month / quota_status.monthly_limit * 100) %}
+                        {% else %}
+                            {% set percentage = (quota_status.used_today / quota_status.daily_limit * 100) %}
+                        {% endif %}
                     <div
                         style="margin-top: 1rem; background: rgba(30, 41, 59, 0.8); padding: 1.25rem; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);">
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <svg style="width: 18px; height: 18px; color: var(--accent-primary);" fill="none"
+                                <svg style="width: 18px; height: 18px; color: var(--accent-primary); flex-shrink: 0;" fill="none"
                                     stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
                                     </path>
                                 </svg>
                                 <span
-                                    style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500; letter-spacing: 0.02em;">Documentos
-                                    Procesados {% if quota_status.has_active_payment %}(Mes){% else %}(Hoy){% endif
+                                    style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500; letter-spacing: 0.02em; white-space: nowrap;">Etiquetas
+                                    procesadas {% if quota_status.has_active_payment %}(Mes){% else %}(Hoy){% endif
                                     %}</span>
                             </div>
-                            <span style="font-weight: 700; font-size: 0.9rem; color: #fff;">
-                                {% if quota_status.active_plan_type == 'unlimited' %}
-                                {{ quota_status.used_month }}<span
-                                    style="color: var(--text-secondary); font-weight: 500; font-size: 1.8rem; line-height: 0.8; vertical-align: middle; position: relative; top: -2px;">/∞</span>
-                                {% elif quota_status.active_plan_type == 'premium' %}
-                                {{ quota_status.used_month }}<span
-                                    style="color: var(--text-secondary); font-weight: 500;">/{{
-                                    quota_status.monthly_limit }}</span>
-                                {% else %}
-                                {{ quota_status.used_today }}<span
-                                    style="color: var(--text-secondary); font-weight: 500;">/{{ quota_status.daily_limit
-                                    }}</span>
-                                {% endif %}
-                            </span>
+
+                            {% if quota_status.active_plan_type != 'infinity' %}
+                            <div style="flex: 1; text-align: center; white-space: nowrap;">
+                                <span id="quotaWarningText" style="font-size: 0.75rem; font-weight: 600; 
+                                    {% if percentage >= 100 %} color: var(--error-color); {% elif percentage >= 50 %} color: var(--accent-primary); {% else %} display: none; {% endif %}">
+                                    {% if percentage >= 100 %} ¡Llegaste al límite! 🛑 {% elif percentage >= 50 %} ¡Te acercas al límite! 🚀 {% endif %}
+                                </span>
+                            </div>
+                            {% endif %}
+
+                            <div style="text-align: right;">
+                                <span id="usedQuotaCount" style="font-weight: 700; font-size: 0.9rem; color: #fff;">
+                                    {% if quota_status.active_plan_type == 'infinity' %}
+                                    <span id="usedQuotaNumber">{{ quota_status.used_month }}</span><span
+                                        style="color: var(--text-secondary); font-weight: 500; font-size: 1.8rem; line-height: 0.8; vertical-align: middle; position: relative; top: -2px;">/∞</span>
+                                    {% elif quota_status.active_plan_type == 'pro' %}
+                                    <span id="usedQuotaNumber">{{ quota_status.used_month }}</span><span
+                                        style="color: var(--text-secondary); font-weight: 500;">/{{
+                                        quota_status.monthly_limit }}</span>
+                                    {% else %}
+                                    <span id="usedQuotaNumber">{{ quota_status.used_today }}</span><span
+                                        style="color: var(--text-secondary); font-weight: 500;">/{{ quota_status.daily_limit
+                                        }}</span>
+                                    {% endif %}
+                                </span>
+                            </div>
                         </div>
                         <div
                             style="width: 100%; background: rgba(0,0,0,0.3); border-radius: 99px; height: 10px; overflow: hidden; position: relative;">
-                            {% if quota_status.active_plan_type == 'unlimited' %}
-                                {% set percentage = 100 %}
-                            {% elif quota_status.active_plan_type == 'premium' %}
-                                {% set percentage = (quota_status.used_month / quota_status.monthly_limit * 100) %}
-                            {% else %}
-                                {% set percentage = (quota_status.used_today / quota_status.daily_limit * 100) %}
-                            {% endif %}
-                            <div
+                            <div id="quotaProgressBar"
                                 style="height: 100%; 
-                                {% if quota_status.active_plan_type == 'unlimited' %}
+                                {% if quota_status.active_plan_type == 'infinity' %}
                                 background: linear-gradient(90deg, #c084fc 0%, #a855f7 100%); width: 100%; box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
                                 {% else %}
                                 background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%); width: {{ percentage }}%; box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
@@ -436,19 +448,6 @@
                                 transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);">
                             </div>
                         </div>
-                        {% if quota_status.active_plan_type != 'unlimited' and quota_status.active_plan_type != 'premium' %}
-                            {% if percentage >= 100 %}
-                            <div
-                                style="margin-top: 0.75rem; text-align: right; font-size: 0.75rem; color: var(--error-color); font-weight: 600;">
-                                ¡Llegaste al límite! 🛑
-                            </div>
-                            {% elif percentage >= 50 %}
-                            <div
-                                style="margin-top: 0.75rem; text-align: right; font-size: 0.75rem; color: var(--accent-primary);">
-                                ¡Te acercas al límite! 🚀
-                            </div>
-                            {% endif %}
-                        {% endif %}
                     </div>
                     {% endif %}
 
@@ -479,45 +478,43 @@
                     <h2
                         style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; background: linear-gradient(to right, #60a5fa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                         ¡Límite de cuota alcanzado!</h2>
-                    <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem; line-height: 1.6;">
-                        Has utilizado todos los documentos de tu plan actual. Actualiza tu plan para procesar etiquetas sin interrupciones.</p>
 
                     <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-top: 1rem;">
                         
-                        <!-- Tarjeta Plan Premium (Visible para free y premium que deseen recargar) -->
+                        <!-- Tarjeta Plan Pro (Visible para free y pro que deseen recargar) -->
                         <div style="flex: 1; min-width: 200px; max-width: 250px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; align-items: center;">
-                            <h3 style="font-size: 1.2rem; color: #60a5fa; margin-bottom: 0.5rem;">Plan Premium</h3>
-                            <div style="font-size: 1.8rem; font-weight: 700; color: white; margin-bottom: 1rem;">${{ prices.premium }}<span style="font-size: 0.8rem; color: #94a3b8; font-weight: 400;">/mes</span></div>
+                            <h3 style="font-size: 1.2rem; color: #60a5fa; margin-bottom: 0.5rem;">Plan Pro</h3>
+                            <div style="font-size: 1.8rem; font-weight: 700; color: white; margin-bottom: 1rem;">${{ prices.pro }}<span style="font-size: 0.8rem; color: #94a3b8; font-weight: 400;">/mes</span></div>
                             <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem 0; font-size: 0.85rem; color: #cbd5e1; text-align: left; width: 100%;">
-                                <li style="margin-bottom: 0.5rem;">✅ +100 documentos/mes</li>
+                                <li style="margin-bottom: 0.5rem;">✅ +100 etiquetas/mes</li>
                                 <li style="margin-bottom: 0.5rem;">✅ Procesamiento prioritario</li>
                             </ul>
-                            <button onclick="upgradePlan('premium', this)" class="btn"
+                            <button onclick="upgradePlan('pro', this)" class="btn"
                                 style="margin-top: auto; width: 100%; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); padding: 0.75rem; border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.3s ease;">
-                                Elegir Premium
+                                Elegir Pro
                             </button>
                         </div>
 
-                        <!-- Tarjeta Plan Sin Límites (Visible para gratis y premium) -->
+                        <!-- Tarjeta Plan Infinity (Visible para starter y pro) -->
                         <div style="flex: 1; min-width: 200px; max-width: 250px; background: linear-gradient(145deg, rgba(30, 27, 75, 0.8) 0%, rgba(88, 28, 135, 0.6) 100%); border: 1px solid rgba(168, 85, 247, 0.5); border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; align-items: center; position: relative; box-shadow: 0 10px 25px -5px rgba(168, 85, 247, 0.3);">
                             <div style="position: absolute; top: -10px; background: linear-gradient(90deg, #c084fc, #a855f7); color: white; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 99px; letter-spacing: 0.5px;">RECOMENDADO</div>
                             
-                            <h3 style="font-size: 1.2rem; color: #c084fc; margin-bottom: 0.5rem;">Plan Sin Límites</h3>
+                            <h3 style="font-size: 1.2rem; color: #c084fc; margin-bottom: 0.5rem;">Plan Infinity</h3>
                             
-                            {% if quota_status.active_plan_type == 'premium' %}
+                            {% if quota_status.active_plan_type == 'pro' %}
                                 <div style="font-size: 1.8rem; font-weight: 700; color: white; margin-bottom: 1rem;">${{ prices.upgrade }}<span style="font-size: 0.8rem; color: #94a3b8; font-weight: 400;">/mes</span></div>
                                 <div style="font-size: 0.75rem; color: #a855f7; margin-top: -0.75rem; margin-bottom: 1rem;">(Solo pagas la diferencia)</div>
                             {% else %}
-                                <div style="font-size: 1.8rem; font-weight: 700; color: white; margin-bottom: 1rem;">${{ prices.unlimited }}<span style="font-size: 0.8rem; color: #94a3b8; font-weight: 400;">/mes</span></div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: white; margin-bottom: 1rem;">${{ prices.infinity }}<span style="font-size: 0.8rem; color: #94a3b8; font-weight: 400;">/mes</span></div>
                             {% endif %}
                             
                             <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem 0; font-size: 0.85rem; color: #cbd5e1; text-align: left; width: 100%;">
-                                <li style="margin-bottom: 0.5rem;">🚀 Documentos <b style="color:white;">Ilimitados</b></li>
+                                <li style="margin-bottom: 0.5rem;">🚀 Etiquetas <b style="color:white;">Ilimitadas</b></li>
                                 <li style="margin-bottom: 0.5rem;">⚡ Velocidad máxima</li>
                             </ul>
-                            <button onclick="upgradePlan('unlimited', this)" class="btn"
+                            <button onclick="upgradePlan('infinity', this)" class="btn"
                                 style="margin-top: auto; width: 100%; background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); color: white; border: none; padding: 0.75rem; border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);">
-                                Elegir Sin Límites
+                                Elegir Infinity
                             </button>
                         </div>
 
@@ -535,8 +532,7 @@
                                     d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
                                 </path>
                             </svg>
-                            <div class="upload-text">Haz clic o arrastra un PDF aquí</div>
-                            <div class="upload-subtext">Puedes seleccionar varios archivos</div>
+                            <div class="upload-text">Haz clic o arrastra tus etiquetas aquí</div>
                             <input type="file" name="files" id="fileInput" accept="application/pdf" multiple required>
                             <div id="fileName"></div>
                         </div>
@@ -655,7 +651,7 @@
                     alertEl.style.backgroundColor = 'var(--success-bg)';
                     alertEl.style.color = 'var(--success-color)';
                     alertEl.style.border = '1px solid rgba(16, 185, 129, 0.2)';
-                    msgEl.textContent = '¡Pago exitoso! Tu cuenta Premium ya está activa.';
+                    msgEl.textContent = '¡Pago exitoso! Tu cuenta Pro ya está activa.';
                     iconEl.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
                 } else if (paymentStatus === 'failure') {
                     alertEl.style.backgroundColor = 'var(--error-bg)';
@@ -667,7 +663,7 @@
                     alertEl.style.backgroundColor = 'rgba(245, 158, 11, 0.1)';
                     alertEl.style.color = '#f59e0b';
                     alertEl.style.border = '1px solid rgba(245, 158, 11, 0.2)';
-                    msgEl.textContent = 'Tu pago está pendiente. Activaremos tu cuenta Premium en cuanto se acredite.';
+                    msgEl.textContent = 'Tu pago está pendiente. Activaremos tu cuenta Pro en cuanto se acredite.';
                     iconEl.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
                 }
                 
@@ -689,12 +685,16 @@
         const labelsConfigContainer = document.getElementById('labelsConfigContainer');
 
         const remainingQuota = {% if quota_status %}{{ (quota_status.monthly_limit - quota_status.used_month) if quota_status.has_active_payment else (quota_status.daily_limit - quota_status.used_today) }}{% else %}0{% endif %};
+        let currentRemainingQuota = remainingQuota;
+        const currentQuotaLimit = {% if quota_status %}{{ quota_status.monthly_limit if quota_status.has_active_payment else quota_status.daily_limit }}{% else %}0{% endif %};
+        const isInfinityPlan = {% if quota_status and quota_status.active_plan_type == 'infinity' %}true{% else %}false{% endif %};
+        let pendingFilesProcessed = 0;
 
         fileInput.addEventListener('change', function (e) {
             const files = this.files;
             if (files && files.length > 0) {
-                if (remainingQuota > 0 && files.length > remainingQuota) {
-                    errorMessage.textContent = `Has seleccionado ${files.length} documentos, pero solo te quedan ${remainingQuota} disponibles en tu cuota. Por favor selecciona menos archivos.`;
+                if (!isInfinityPlan && currentRemainingQuota > 0 && files.length > currentRemainingQuota) {
+                    errorMessage.textContent = `Has seleccionado ${files.length} etiquetas, pero solo te quedan ${currentRemainingQuota} disponibles en tu cuota. Por favor selecciona menos archivos.`;
                     showAutoDismissAlert(errorAlert);
                     fileNameDisplay.style.display = 'none';
                     submitBtn.disabled = true;
@@ -703,7 +703,7 @@
                 }
 
                 if (files.length === 1) {
-                    fileNameDisplay.textContent = files[0].name;
+                    fileNameDisplay.textContent = "1 archivo seleccionado";
                 } else {
                     fileNameDisplay.textContent = `${files.length} archivos seleccionados`;
                 }
@@ -752,12 +752,59 @@
             fileInput.dispatchEvent(event);
         });
 
-        // Limpiar interfaz y actualizar contador después de la descarga
+        // Limpiar interfaz y actualizar contador después de la descarga (Smooth disappearance)
         const downloadBtn = document.getElementById('downloadBtn');
         downloadBtn.addEventListener('click', function () {
-            setTimeout(function () {
-                window.location.reload();
-            }, 500);
+            // 1. Quitar la clase del layout para que la transición suave la oculte
+            document.getElementById('mainLayout').classList.remove('has-result');
+            
+            // 2. Actualizar contadores SPA (diferido)
+            if (pendingFilesProcessed > 0) {
+                const usedQuotaSpan = document.getElementById('usedQuotaNumber');
+                if (usedQuotaSpan) {
+                    let currentVal = parseInt(usedQuotaSpan.textContent.trim()) || 0;
+                    usedQuotaSpan.textContent = (currentVal + pendingFilesProcessed) + "";
+                }
+                
+                if (!isInfinityPlan) {
+                    currentRemainingQuota -= pendingFilesProcessed;
+                    if (currentQuotaLimit > 0) {
+                        const newPercentage = ((currentQuotaLimit - currentRemainingQuota) / currentQuotaLimit) * 100;
+                        const progressBar = document.getElementById('quotaProgressBar');
+                        if (progressBar) {
+                            progressBar.style.width = newPercentage + '%';
+                        }
+                        
+                        const warningText = document.getElementById('quotaWarningText');
+                        if (warningText) {
+                            if (newPercentage >= 100) {
+                                warningText.style.display = 'inline-block';
+                                warningText.style.color = 'var(--error-color)';
+                                warningText.textContent = '¡Llegaste al límite! 🛑';
+                            } else if (newPercentage >= 50) {
+                                warningText.style.display = 'inline-block';
+                                warningText.style.color = 'var(--accent-primary)';
+                                warningText.textContent = '¡Te acercas al límite! 🚀';
+                            } else {
+                                warningText.style.display = 'none';
+                            }
+                        }
+                    }
+
+                    // 3. Mostrar límite de cuota alcanzado si se acaba el saldo
+                    if (currentRemainingQuota <= 0) {
+                        document.getElementById('uploadUI').style.display = 'none';
+                        document.getElementById('quotaExceededUI').style.display = 'block';
+                    }
+                }
+            }
+            
+            // 4. Limpiar el input file y variables
+            const fileInput = document.getElementById('fileInput');
+            fileInput.value = '';
+            const event = new Event('change');
+            fileInput.dispatchEvent(event);
+            pendingFilesProcessed = 0;
         });
 
         async function upgradePlan(planType, btnElement) {
@@ -849,6 +896,9 @@
                 const downloadBtn = document.getElementById('downloadBtn');
                 downloadBtn.href = url; // descargar usa la URL normal
                 downloadBtn.download = "etiquetas_optimizadas.pdf";
+
+                // Guardar la cantidad de archivos para procesar el SPA en la descarga
+                pendingFilesProcessed = fileInput.files.length;
 
                 // Restaurar botón
                 submitBtn.disabled = false;
