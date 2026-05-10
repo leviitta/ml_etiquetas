@@ -1,4 +1,5 @@
 import os
+import uuid
 import shutil
 import tempfile
 from typing import List
@@ -6,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi import APIRouter, Request, File, UploadFile, BackgroundTasks
 from app.utils.extract_label import process_multiple_labels
-from app.db.quota import get_quota_status, verify_quota_for_batch, register_usage, QuotaExceededException
+from app.db.quota import get_quota_status, verify_quota_for_batch, register_usage, QuotaExceededException, ensure_user
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -19,9 +20,20 @@ def format_price(amount: float) -> str:
 async def get_index(request: Request):
     """Render the upload form"""
     user = request.session.get('user')
-    quota_status = None
+    
+    # 1. Identificar al usuario (Logueado o Anónimo)
     if user and user.get("email"):
-        quota_status = await get_quota_status(user["email"])
+        identifier = user["email"]
+    else:
+        # Generar ID anónimo si no existe
+        if not request.session.get("anon_id"):
+            request.session["anon_id"] = f"anon_{uuid.uuid4().hex[:12]}"
+        identifier = request.session["anon_id"]
+
+    # 2. Registrar el usuario en la BD (como email o anon_id) para que funcione quota_usage
+    await ensure_user(identifier, user.get("name", "Usuario Anónimo") if user else "Usuario Anónimo")
+    
+    quota_status = await get_quota_status(identifier)
         
     prices = {
         "pro": format_price(float(os.getenv("PAYMENT_PRO_AMOUNT", "4990"))),
@@ -43,12 +55,17 @@ async def extract_label(
 ):
     """Handle PDF upload, extract label, and return the PDF file directly"""
     user = request.session.get('user')
-    if not user:
-        return JSONResponse(status_code=401, content={"error": "Debes iniciar sesión para extraer etiquetas."})
-        
-    email = user.get("email")
-    if not email:
-        return JSONResponse(status_code=401, content={"error": "Usuario no válido."})
+    
+    if user and user.get("email"):
+        identifier = user["email"]
+    else:
+        identifier = request.session.get("anon_id")
+        if not identifier:
+            # Fallback (should have been created on index load)
+            identifier = f"anon_{uuid.uuid4().hex[:12]}"
+            request.session["anon_id"] = identifier
+            
+    await ensure_user(identifier, user.get("name", "Usuario Anónimo") if user else "Usuario Anónimo")
 
     valid_files = [f for f in files if f.filename and f.filename.lower().endswith(".pdf")]
     if not valid_files:
@@ -58,7 +75,7 @@ async def extract_label(
     
     # 1. Verificar cuota antes de procesar
     try:
-        await verify_quota_for_batch(email, num_files)
+        await verify_quota_for_batch(identifier, num_files)
     except QuotaExceededException as e:
         return JSONResponse(status_code=403, content={"error": str(e.detail)})
         
@@ -83,7 +100,7 @@ async def extract_label(
         
         # 2. Registrar el uso de cada archivo exitosamente procesado
         for _ in range(num_files):
-            await register_usage(email)
+            await register_usage(identifier)
             
     except Exception as e:
         temp_dir_obj.cleanup()

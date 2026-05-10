@@ -361,7 +361,7 @@
                     {% endif %}
                     <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 0.5rem;">
                         <h1 style="margin-bottom: 0;">MeliOps</h1>
-                        {% if user and quota_status %}
+                        {% if quota_status %}
                         <div style="display: inline-flex; align-items: center; justify-content: center; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.85rem; font-weight: 600; margin-bottom: 0;
                             {% if quota_status.active_plan_type == 'infinity' %}
                                 background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
@@ -383,7 +383,6 @@
                         </div>
                         {% endif %}
                     </div>
-                    {% if user %}
 
                     {% if quota_status %}
                         {% if quota_status.active_plan_type == 'infinity' %}
@@ -468,8 +467,6 @@
                     <span id="paymentMessage"></span>
                 </div>
 
-                {% if user %}
-
                 <!-- UI de Cuota Excedida -->
                 <div id="quotaExceededUI"
                     style="{% if quota_status and not quota_status.can_upload %}display: block;{% else %}display: none;{% endif %} text-align: center; background: rgba(30, 41, 59, 0.5); padding: 1.5rem 1rem; border-radius: 16px; border: 1px dashed rgba(139, 92, 246, 0.4); backdrop-filter: blur(10px);">
@@ -550,27 +547,6 @@
                         </button>
                     </form>
                 </div>
-                {% else %}
-                <div style="text-align: center; margin-top: 1rem; padding: 2rem 0;">
-                    <a href="/api/v1/auth/login" class="btn"
-                        style="background: white; color: #333; max-width: 300px; margin: 0 auto; display: flex; gap: 10px; align-items: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
-                            <path fill="#FFC107"
-                                d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
-                            <path fill="#FF3D00"
-                                d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
-                            <path fill="#4CAF50"
-                                d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
-                            <path fill="#1976D2"
-                                d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
-                        </svg>
-                        Iniciar sesión con Google
-                    </a>
-                    <p style="margin-top: 1.5rem; color: var(--text-secondary); font-size: 0.95rem;">Para procesar
-                        archivos, necesitas
-                        acceder a tu cuenta primero.</p>
-                </div>
-                {% endif %}
             </div>
         </div>
 
@@ -688,6 +664,7 @@
         let currentRemainingQuota = remainingQuota;
         const currentQuotaLimit = {% if quota_status %}{{ quota_status.monthly_limit if quota_status.has_active_payment else quota_status.daily_limit }}{% else %}0{% endif %};
         const isInfinityPlan = {% if quota_status and quota_status.active_plan_type == 'infinity' %}true{% else %}false{% endif %};
+        const isLoggedIn = {% if user %}true{% else %}false{% endif %};
         let pendingFilesProcessed = 0;
 
         fileInput.addEventListener('change', function (e) {
@@ -808,6 +785,13 @@
         });
 
         async function upgradePlan(planType, btnElement) {
+            if (!isLoggedIn) {
+                if (confirm("Debes iniciar sesión con Google para adquirir un plan y guardar tus beneficios. ¿Deseas iniciar sesión ahora?")) {
+                    window.location.href = "/api/v1/auth/login";
+                }
+                return;
+            }
+
             const originalText = btnElement.innerText;
             btnElement.innerText = 'Redirigiendo...';
             btnElement.disabled = true;
