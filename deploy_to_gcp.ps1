@@ -66,6 +66,23 @@ Write-Host "   Cuenta Servicio  : $SERVICE_ACCOUNT"        -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host ""
 
+# 0. Verificar Autenticación de Google Cloud para cuenta específica
+Write-Host "[0/7] Verificando autenticación de Google Cloud..." -ForegroundColor Yellow
+$TARGET_ACCOUNT = "av.diazh@gmail.com"
+$activeAccount = gcloud config get-value account 2>$null
+
+if ($activeAccount -ne $TARGET_ACCOUNT) {
+    Write-Host "      Cuenta activa ($activeAccount) no coincide con $TARGET_ACCOUNT. Forzando login..." -ForegroundColor Cyan
+    gcloud config set account $TARGET_ACCOUNT
+    gcloud auth login $TARGET_ACCOUNT
+    gcloud auth application-default login
+    Write-Host "      Autenticación completada para $TARGET_ACCOUNT." -ForegroundColor Green
+} else {
+    Write-Host "      Sesión correcta detectada: $TARGET_ACCOUNT" -ForegroundColor Green
+}
+
+Write-Host ""
+
 # 1. Habilitar APIs necesarias
 Write-Host "[1/7] Habilitando APIs de Google Cloud..." -ForegroundColor Yellow
 gcloud services enable secretmanager.googleapis.com run.googleapis.com cloudbuild.googleapis.com iam.googleapis.com sqladmin.googleapis.com --project $PROJECT_ID
@@ -105,7 +122,7 @@ if (-not $dbExists) {
 
 # Obtener nombre de conexión de Cloud SQL para Cloud Run
 $DB_CONNECTION_NAME = gcloud sql instances describe $DB_INSTANCE_NAME --format="value(connectionName)" --project $PROJECT_ID
-$DATABASE_URL_SECRET = "postgresql://${DB_USER}:${DB_PASSWORD}@/foo?host=/cloudsql/${DB_CONNECTION_NAME}&dbname=${DB_NAME}"
+$DATABASE_URL_SECRET = "postgresql://${DB_USER}:${DB_PASSWORD}@/${DB_NAME}?host=/cloudsql/${DB_CONNECTION_NAME}"
 
 # 4. Gestionar Secretos
 Write-Host "[4/7] Configurando secretos en Secret Manager..." -ForegroundColor Yellow

@@ -6,6 +6,7 @@ load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from app.api.v1.endpoints import router as extract_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.payments import router as payments_router
@@ -39,6 +40,9 @@ app = FastAPI(
 
 # Add Session Middleware for OAuth
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "una_clave_secreta_de_respaldo"))
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Include the router for version 1 of our API
 app.include_router(extract_router, prefix="/api/v1", tags=["etiquetas"])

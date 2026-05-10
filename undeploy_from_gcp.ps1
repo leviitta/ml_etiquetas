@@ -18,6 +18,7 @@ $REGION             = $envVars["GCP_REGION"]
 $SERVICE            = $envVars["GCP_SERVICE"]
 $SERVICE_ACCOUNT    = $envVars["GCP_SERVICE_ACCOUNT"]
 $CUSTOM_DOMAIN      = $envVars["CUSTOM_DOMAIN"]
+$DB_INSTANCE_NAME   = $envVars["DB_INSTANCE_NAME"]
 
 if (-not $PROJECT_ID -or -not $REGION -or -not $SERVICE) {
     Write-Host "❌ Faltan variables de GCP en el archivo .env." -ForegroundColor Red
@@ -70,16 +71,26 @@ if ($saConfirmation -match "^[sS]") {
 }
 
 Write-Host ""
-$secretConfirmation = Read-Host "¿Deseas también eliminar los secretos de Secret Manager (GOOGLE_CLIENT_SECRET, SECRET_KEY, MP_ACCESS_TOKEN)? (S/N)"
+$secretConfirmation = Read-Host "¿Deseas también eliminar los secretos de Secret Manager (GOOGLE_CLIENT_SECRET, SECRET_KEY, MP_ACCESS_TOKEN, DATABASE_URL)? (S/N)"
 if ($secretConfirmation -match "^[sS]") {
-    Write-Host "[4/4] Eliminando secretos de Secret Manager..." -ForegroundColor Yellow
-    $secrets = @("GOOGLE_CLIENT_SECRET", "SECRET_KEY", "MP_ACCESS_TOKEN")
+    Write-Host "[4/5] Eliminando secretos de Secret Manager..." -ForegroundColor Yellow
+    $secrets = @("GOOGLE_CLIENT_SECRET", "SECRET_KEY", "MP_ACCESS_TOKEN", "DATABASE_URL")
     foreach ($secret in $secrets) {
         gcloud secrets delete $secret --project $PROJECT_ID --quiet 2>$null
         Write-Host "      Secreto $secret eliminado." -ForegroundColor Green
     }
 } else {
-    Write-Host "[4/4] Saltando eliminación de secretos." -ForegroundColor DarkGray
+    Write-Host "[4/5] Saltando eliminación de secretos." -ForegroundColor DarkGray
+}
+
+Write-Host ""
+$dbConfirmation = Read-Host "🚨 PELIGRO: ¿Deseas eliminar la instancia de Base de Datos Cloud SQL '$DB_INSTANCE_NAME'? ¡ESTO BORRARÁ TODOS LOS USUARIOS, PAGOS Y DATOS IRREVERSIBLEMENTE! (S/N)"
+if ($dbConfirmation -match "^[sS]") {
+    Write-Host "[5/5] Eliminando instancia de Cloud SQL..." -ForegroundColor Yellow
+    gcloud sql instances delete $DB_INSTANCE_NAME --project $PROJECT_ID --quiet
+    Write-Host "✅ Instancia de base de datos eliminada." -ForegroundColor Green
+} else {
+    Write-Host "[5/5] Saltando eliminación de la base de datos." -ForegroundColor DarkGray
 }
 
 Write-Host ""

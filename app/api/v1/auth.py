@@ -21,7 +21,9 @@ oauth.register(
 )
 
 @router.get('/login')
-async def login(request: Request):
+async def login(request: Request, intent_plan: str = None):
+    if intent_plan:
+        request.session['intent_plan'] = intent_plan
     client_base_url = str(request.base_url).rstrip("/")
     redirect_uri = f"{client_base_url}/api/v1/auth/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
@@ -43,6 +45,10 @@ async def auth_callback(request: Request):
         if email:
             await ensure_user(email, name)
             
+    intent_plan = request.session.pop('intent_plan', None)
+    if intent_plan:
+        return RedirectResponse(url=f'/api/v1/?checkout_plan={intent_plan}')
+        
     return RedirectResponse(url='/api/v1/')
 
 @router.get('/logout')
