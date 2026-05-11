@@ -4,7 +4,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MeliOps</title>
+    <title>MeliOps | Optimizador de Etiquetas Mercado Libre para Imprimir en A4</title>
+    <meta name="description" content="Ahorra papel agrupando tus etiquetas de Mercado Libre. Sube tus PDFs y MeliOps las extraerá y organizará en hojas A4 (2, 4 o 6 por hoja) listas para imprimir.">
+    <meta name="keywords" content="etiquetas mercado libre, optimizar etiquetas, agrupar etiquetas pdf, imprimir etiquetas mercado libre, conversor etiquetas a4, extraer etiquetas meli">
+    <meta name="author" content="MeliOps">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="MeliOps | Optimizador de Etiquetas Mercado Libre">
+    <meta property="og:description" content="Ahorra papel agrupando tus etiquetas. Sube tus PDFs y organízalos en hojas A4 listas para imprimir.">
+    <meta property="og:image" content="/static/logo_MeliOps.png">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="MeliOps | Optimizador de Etiquetas Mercado Libre">
+    <meta name="twitter:description" content="Ahorra papel agrupando tus etiquetas. Sube tus PDFs y organízalos en hojas A4 listas para imprimir.">
+    <meta name="twitter:image" content="/static/logo_MeliOps.png">
+
+    <link rel="canonical" href="https://meliops.app/" />
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "MeliOps",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "WebBrowser",
+      "description": "Herramienta online para vendedores de Mercado Libre que extrae y agrupa etiquetas de envío desde archivos PDF, optimizándolas para imprimir en formato A4.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [{
+        "@type": "Question",
+        "name": "¿Cómo imprimir varias etiquetas de Mercado Libre en una hoja?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sube tus archivos PDF originales de Mercado Libre a MeliOps. La herramienta extraerá automáticamente la etiqueta y te permitirá descargar un nuevo PDF agrupando 2, 4 o 6 etiquetas por hoja A4."
+        }
+      }, {
+        "@type": "Question",
+        "name": "¿Es gratis optimizar mis etiquetas de envío?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sí, MeliOps ofrece un plan Starter gratuito con límite diario. Para vendedores de alto volumen, existen planes Pro e Infinity."
+        }
+      }]
+    }
+    </script>
+
     <link rel="icon" type="image/png" href="/static/logo_MeliOps.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -387,7 +442,7 @@
                     {% endif %}
                     <div
                         style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 0.25rem;">
-                        <h1 style="margin-bottom: 0; font-size: 1.5rem;">MeliOps</h1>
+                        <h1 style="margin-bottom: 0; font-size: 1.5rem;" title="MeliOps - Optimizador de Etiquetas Mercado Libre">MeliOps</h1>
                         {% if quota_status %}
                         <div style="display: inline-flex; align-items: center; justify-content: center; padding: 0.15rem 0.5rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; margin-bottom: 0;
                             {% if quota_status.active_plan_type == 'infinity' %}
@@ -581,7 +636,8 @@
                                     d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
                                 </path>
                             </svg>
-                            <div class="upload-text">Haz clic o arrastra tus etiquetas aquí</div>
+                            <div class="upload-text">Haz clic o arrastra tus PDFs de Mercado Libre aquí</div>
+                            <div class="upload-subtext" style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">Extraemos y agrupamos tus etiquetas en hojas A4 para ahorrar papel y tiempo.</div>
                             <input type="file" name="files" id="fileInput" accept="application/pdf" multiple required>
                             <div id="fileName"></div>
                         </div>
