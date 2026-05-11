@@ -5,3 +5,13 @@ __pycache__
 *.pyc
 .env
 .python-version
+
+# Memory
+memory/
+
+# Agents & Graphify
+.opencode/
+.agents/
+graphify-out/
+.graphify*
+AGENTS.md

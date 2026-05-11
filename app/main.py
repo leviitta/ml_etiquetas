@@ -53,7 +53,7 @@ from fastapi.responses import PlainTextResponse
 
 @app.get("/robots.txt", include_in_schema=False, response_class=PlainTextResponse)
 async def robots_txt():
-    return "User-agent: *\nAllow: /\nSitemap: https://meliops.app/sitemap.xml"
+    return "User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: https://meliops.app/sitemap.xml"
 
 @app.get("/sitemap.xml", include_in_schema=False, response_class=PlainTextResponse)
 async def sitemap_xml():
