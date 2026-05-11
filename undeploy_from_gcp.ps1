@@ -53,11 +53,11 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 if ($CUSTOM_DOMAIN) {
-    Write-Host "[2/4] Eliminando mapeo de dominio ($CUSTOM_DOMAIN)..." -ForegroundColor Yellow
-    gcloud run domain-mappings delete --domain $CUSTOM_DOMAIN --region $REGION --project $PROJECT_ID --quiet 2>$null
+    Write-Host "[2/5] Eliminando mapeo de dominio ($CUSTOM_DOMAIN)..." -ForegroundColor Yellow
+    gcloud beta run domain-mappings delete --domain $CUSTOM_DOMAIN --region $REGION --project $PROJECT_ID --quiet 2>$null
     Write-Host "✅ Mapeo de dominio eliminado (si existía)." -ForegroundColor Green
 } else {
-    Write-Host "[2/4] No hay dominio personalizado configurado para eliminar." -ForegroundColor DarkGray
+    Write-Host "[2/5] No hay dominio personalizado configurado para eliminar." -ForegroundColor DarkGray
 }
 
 Write-Host ""

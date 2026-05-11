@@ -76,10 +76,15 @@ if ($activeAccount -ne $TARGET_ACCOUNT) {
     gcloud config set account $TARGET_ACCOUNT
     gcloud auth login $TARGET_ACCOUNT
     gcloud auth application-default login
-    Write-Host "      Autenticación completada para $TARGET_ACCOUNT." -ForegroundColor Green
 } else {
     Write-Host "      Sesión correcta detectada: $TARGET_ACCOUNT" -ForegroundColor Green
 }
+
+# Configurar siempre el proyecto activo y el proyecto de cuota para evitar warnings
+Write-Host "      Configurando proyecto activo y de cuotas a: $PROJECT_ID" -ForegroundColor DarkGray
+gcloud config set project $PROJECT_ID --quiet
+gcloud auth application-default set-quota-project $PROJECT_ID --quiet
+Write-Host "      Autenticación y proyecto configurados correctamente." -ForegroundColor Green
 
 Write-Host ""
 
@@ -121,7 +126,7 @@ if (-not $dbExists) {
 }
 
 # Obtener nombre de conexión de Cloud SQL para Cloud Run
-$DB_CONNECTION_NAME = gcloud sql instances describe $DB_INSTANCE_NAME --format="value(connectionName)" --project $PROJECT_ID
+$DB_CONNECTION_NAME = (gcloud sql instances describe $DB_INSTANCE_NAME --format="value(connectionName)" --project $PROJECT_ID).Trim()
 $DATABASE_URL_SECRET = "postgresql://${DB_USER}:${DB_PASSWORD}@/${DB_NAME}?host=/cloudsql/${DB_CONNECTION_NAME}"
 
 # 4. Gestionar Secretos
@@ -144,9 +149,12 @@ foreach ($secret in $secrets.GetEnumerator()) {
         gcloud secrets create $secretName --replication-policy="automatic" --project $PROJECT_ID
     }
     
-    # Agregar versión
+    # Agregar versión (evitando el salto de línea oculto y BOM de PowerShell)
     Write-Host "      Añadiendo versión a $secretName..." -ForegroundColor DarkGray
-    $secretValue | gcloud secrets versions add $secretName --data-file=- --project $PROJECT_ID | Out-Null
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($secretValue)
+    [System.IO.File]::WriteAllBytes("temp_secret.txt", $bytes)
+    gcloud secrets versions add $secretName --data-file="temp_secret.txt" --project $PROJECT_ID | Out-Null
+    Remove-Item "temp_secret.txt"
     
     # Otorgar permiso a la cuenta de servicio
     gcloud secrets add-iam-policy-binding $secretName `
@@ -205,7 +213,7 @@ if ($CUSTOM_DOMAIN) {
     Write-Host ""
     Write-Host "[7/7] Mapeando dominio personalizado $CUSTOM_DOMAIN..." -ForegroundColor Yellow
     # Create the domain mapping.
-    gcloud run domain-mappings create --service $SERVICE --domain $CUSTOM_DOMAIN --region $REGION --project $PROJECT_ID
+    gcloud beta run domain-mappings create --service $SERVICE --domain $CUSTOM_DOMAIN --region $REGION --project $PROJECT_ID
     
     if ($LASTEXITCODE -ne 0) {
         Write-Host "⚠️ No se pudo crear el mapeo de dominio (puede que ya exista o el dominio no esté verificado en Google Webmaster Central)." -ForegroundColor Yellow
