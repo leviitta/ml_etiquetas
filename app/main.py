@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from app.api.v1.endpoints import router as extract_router
 from app.api.v1.auth import router as auth_router
@@ -41,8 +41,14 @@ app = FastAPI(
 # Add Session Middleware for OAuth
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "una_clave_secreta_de_respaldo"))
 
+class CustomStaticFiles(StaticFiles):
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
 # Mount static files
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", CustomStaticFiles(directory="app/static"), name="static")
 
 # Include the router for version 1 of our API
 app.include_router(extract_router, prefix="/api/v1", tags=["etiquetas"])
