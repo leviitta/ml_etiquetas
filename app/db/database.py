@@ -10,15 +10,18 @@ from contextlib import asynccontextmanager
 logger = logging.getLogger(__name__)
 
 # Default local connection string if not provided
+_db_host = os.getenv("DB_HOST", "localhost")
 _db_user = os.getenv("DB_USER", "postgres")
 _db_password = os.getenv("DB_PASSWORD", "mypassword123")
 _db_name = os.getenv("DB_NAME", "mldb")
 
 _env_url = os.getenv("DATABASE_URL")
 if not _env_url or "${DB_USER}" in _env_url:
-    DATABASE_URL = f"postgresql://{_db_user}:{_db_password}@localhost/{_db_name}"
+    DATABASE_URL = f"postgresql://{_db_user}:{_db_password}@{_db_host}/{_db_name}"
 else:
     DATABASE_URL = _env_url
+    if _db_host != "localhost":
+        DATABASE_URL = DATABASE_URL.replace("@localhost/", f"@{_db_host}/")
 
 _pool = None
 

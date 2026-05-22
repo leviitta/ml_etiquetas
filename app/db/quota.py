@@ -134,26 +134,40 @@ class QuotaExceededException(Exception):
 async def verify_quota_for_batch(email: str, num_files: int):
     quota = await get_quota_status(email)
 
+    is_anon = email.startswith("anon_")
+
     if not quota["can_upload"]:
+        detail_msg = "Ya has alcanzado el límite de tu cuota."
+        if is_anon:
+            detail_msg += " Si compraste un plan, por favor inicia sesión."
+        
         raise QuotaExceededException(
             reason=quota["reason"],
-            detail="Ya has alcanzado el límite de tu cuota.",
+            detail=detail_msg,
             quota_status=quota
         )
 
     remaining_today = quota["daily_limit"] - quota["used_today"]
     if num_files > remaining_today:
+        detail_msg = f"Solo te quedan {remaining_today} etiqueta(s) disponibles hoy. Estás intentando subir {num_files}."
+        if is_anon:
+            detail_msg += " Si compraste un plan, por favor inicia sesión."
+            
         raise QuotaExceededException(
             reason="daily",
-            detail=f"Solo te quedan {remaining_today} etiqueta(s) disponibles hoy. Estás intentando subir {num_files}.",
+            detail=detail_msg,
             quota_status=quota
         )
 
     remaining_month = quota["monthly_limit"] - quota["used_month"]
     if num_files > remaining_month:
+        detail_msg = f"Solo te quedan {remaining_month} etiqueta(s) disponibles este mes. Estás intentando subir {num_files}."
+        if is_anon:
+            detail_msg += " Si compraste un plan, por favor inicia sesión."
+            
         raise QuotaExceededException(
             reason="monthly",
-            detail=f"Solo te quedan {remaining_month} etiqueta(s) disponibles este mes. Estás intentando subir {num_files}.",
+            detail=detail_msg,
             quota_status=quota
         )
 

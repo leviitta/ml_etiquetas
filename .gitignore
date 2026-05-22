@@ -5,18 +5,33 @@ build/
 dist/
 wheels/
 *.egg-info
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+htmlcov/
+*.log
 
 # Virtual environments
 .venv
+pip-log.txt
+pip-delete-this-directory.txt
 
 # Environment variables
 .env
 .env.*
 !.env.example
 
-# IDEs
+# IDEs and OS
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
+.directory
+
+# Reference & Temporary Files
+MercadolibreComponent.php
 
 # Agents & Graphify
 .opencode/
@@ -24,6 +39,7 @@ wheels/
 graphify-out/
 .graphify*
 AGENTS.md
+.sisyphus/
 
 # Memory
 memory/

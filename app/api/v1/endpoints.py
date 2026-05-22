@@ -47,6 +47,16 @@ async def get_index(request: Request):
         context={"user": user, "quota_status": quota_status, "prices": prices}
     )
 
+@router.get("/faq", response_class=HTMLResponse)
+async def get_faq(request: Request):
+    """Render the FAQ page"""
+    user = request.session.get('user')
+    return templates.TemplateResponse(
+        request=request, 
+        name="faq.html", 
+        context={"user": user}
+    )
+
 @router.post("/extract")
 async def extract_label(
     request: Request, 

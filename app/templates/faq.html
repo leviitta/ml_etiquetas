@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preguntas Frecuentes y Optimización | MeliOps</title>
+    <meta name="description" content="Preguntas frecuentes y guía para optimizar tus etiquetas de envío de Mercado Libre con MeliOps.">
+    <link rel="icon" type="image/png" href="/static/logo_MeliOps.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-primary: #3b82f6;
+            --accent-hover: #2563eb;
+            --success-color: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 2rem 1rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+            transition: color 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--accent-hover);
+        }
+
+        .header {
+            margin-bottom: 2.5rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            margin-bottom: 2rem;
+        }
+
+        .glass-card h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 0.75rem;
+        }
+
+        .faq-item {
+            margin-bottom: 1.75rem;
+        }
+
+        .faq-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .faq-item h3 {
+            color: #f8fafc;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .faq-item p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .grid-benefits {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .benefit-card h3 {
+            font-size: 1.15rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .benefit-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a href="/api/v1/" class="back-link">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Volver al Inicio
+        </a>
+
+        <div class="header">
+            <h1>Preguntas Frecuentes y Guía</h1>
+            <p>Todo lo que necesitas saber para optimizar tus etiquetas de envío de Mercado Libre</p>
+        </div>
+
+        <div class="glass-card">
+            <h2>Optimiza tus Envíos: Ahorra Tiempo y Dinero</h2>
+            <div class="grid-benefits">
+                <div class="benefit-card">
+                    <h3 style="color: var(--accent-primary);">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Ahorra Tiempo (Sin Trabajo Manual)
+                    </h3>
+                    <p>Elimina el trabajo manual. MeliOps es una herramienta online gratuita que recorta y agrupa etiquetas PDF de Mercado Libre de forma automática. Olvídate de abrir, recortar e imprimir etiquetas 1 por 1. Sube tu lote completo y obtén un único PDF listo para imprimir en segundos.</p>
+                </div>
+                <div class="benefit-card">
+                    <h3 style="color: var(--success-color);">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Ahorra 75% en Papel y Tóner
+                    </h3>
+                    <p>Convierte automáticamente el formato estándar a una cuadrícula eficiente. Imprime 2, 4 o 6 etiquetas por hoja A4 o configura el tamaño exacto para tu impresora térmica.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <h2>Preguntas Frecuentes sobre Etiquetas de Mercado Libre</h2>
+            
+            <div class="faq-item">
+                <h3>¿Cómo imprimir varias etiquetas de Mercado Libre en una hoja?</h3>
+                <p>Para imprimir varias etiquetas en una sola hoja, sube tus archivos PDF originales de Mercado Libre a MeliOps. La herramienta extraerá automáticamente la etiqueta (ignorando la información irrelevante del PDF) y te permitirá descargar un nuevo documento PDF agrupando 2, 4 o 6 etiquetas por hoja A4, listo para mandar a la impresora.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3>¿MeliOps recorta automáticamente la etiqueta del PDF original?</h3>
+                <p>Sí, MeliOps utiliza un algoritmo inteligente que analiza el texto, los códigos de barras y los márgenes de los PDFs de Mercado Envíos. Recorta exactamente el área ("bounding box") de la etiqueta real, descartando resúmenes de venta e instrucciones, logrando que el PDF resultante sea perfecto para tu impresora.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3>¿Por qué MeliOps es mejor que unir PDFs a mano?</h3>
+                <p>Las herramientas genéricas como iLovePDF o Smallpdf solo unen páginas enteras. MeliOps está diseñado específicamente para vendedores de Mercado Libre: extrae solo la etiqueta, la escala correctamente, elimina las instrucciones innecesarias y genera una cuadrícula perfecta, evitando que las etiquetas salgan cortadas al imprimir.</p>
+            </div>
+            
+            <div class="faq-item">
+                <h3>¿Es gratis optimizar mis etiquetas de envío?</h3>
+                <p>Sí, MeliOps ofrece un plan Starter gratuito con un límite diario generoso para pequeños vendedores. Si tienes un alto volumen de ventas y necesitas procesar cientos de etiquetas al mes de forma prioritaria, ofrecemos los planes Pro e Infinity.</p>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 MeliOps. Todos los derechos reservados.</p>
+        </footer>
+    </div>
+</body>
+
+</html>

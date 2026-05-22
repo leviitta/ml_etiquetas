@@ -1,7 +1,7 @@
 import os
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
-from app.db.quota import ensure_user
+from app.db.quota import ensure_user, get_quota_status
 from starlette.config import Config
 from authlib.integrations.starlette_client import OAuth
 
@@ -38,6 +38,7 @@ async def auth_callback(request: Request):
     
     # Obtenemos la info del usuario
     user = token.get('userinfo')
+    email = None
     if user:
         request.session['user'] = dict(user)
         email = user.get("email")
@@ -46,8 +47,21 @@ async def auth_callback(request: Request):
             await ensure_user(email, name)
             
     intent_plan = request.session.pop('intent_plan', None)
-    if intent_plan:
-        return RedirectResponse(url=f'/api/v1/?checkout_plan={intent_plan}')
+    if intent_plan and email:
+        quota_status = await get_quota_status(email)
+        current_plan = quota_status.get("active_plan_type", "starter")
+        
+        if current_plan == "infinity":
+            return RedirectResponse(url='/api/v1/?payment=already_infinity')
+            
+        elif current_plan == "pro":
+            if intent_plan == "infinity":
+                return RedirectResponse(url=f'/api/v1/?checkout_plan={intent_plan}')
+            else:
+                return RedirectResponse(url='/api/v1/?payment=already_pro')
+                
+        else:
+            return RedirectResponse(url=f'/api/v1/?checkout_plan={intent_plan}')
         
     return RedirectResponse(url='/api/v1/')
 

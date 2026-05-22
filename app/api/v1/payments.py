@@ -162,16 +162,18 @@ async def payment_success(request: Request):
     Registramos el pago y redirigimos al home.
     """
     user  = request.session.get("user")
-    email = user.get("email", "") if user else ""
+    session_email = user.get("email", "") if user else ""
 
     payment_id    = request.query_params.get("payment_id", "")
     preference_id = request.query_params.get("preference_id", "")
     status        = request.query_params.get("status", "unknown")
 
-    if email and status == "approved":
+    if status == "approved":
         # Check plan type from preference metadata directly via MP API
         plan_type = "pro"
         final_amount = PAYMENT_PRO_AMOUNT
+        email = session_email
+        
         if payment_id and MP_ACCESS_TOKEN:
             try:
                 async with httpx.AsyncClient() as client:
@@ -192,6 +194,14 @@ async def payment_success(request: Request):
                 
                 plan_type = payment_data.get("metadata", {}).get("plan_type", "pro")
                 
+                # Use session_email if present, else extract from payment data
+                if not email:
+                    email = payment_data.get("external_reference") or payment_data.get("metadata", {}).get("user_email") or payment_data.get("payer", {}).get("email", "")
+
+                if not email:
+                    logger.error("No se pudo identificar al usuario para el pago %s", payment_id)
+                    return RedirectResponse(url="/api/v1/?payment=failure")
+                
                 # Check for actual payment status from API (security measure)
                 if plan_type == "infinity":
                     fallback_amount = PAYMENT_INFINITY_AMOUNT
@@ -208,6 +218,7 @@ async def payment_success(request: Request):
             return RedirectResponse(url="/api/v1/?payment=failure")
 
         valid_until = (datetime.now(timezone.utc) + timedelta(days=PAYMENT_DAYS)).isoformat()
+        await ensure_user(email)
         await register_payment(
             email=email,
             mp_payment_id=payment_id,

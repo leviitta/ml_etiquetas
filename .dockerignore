@@ -1,13 +1,47 @@
+# Git and Gitignore
 .git
 .gitignore
+.gcloudignore
+.dockerignore
+
+# Virtual environments & Dependencies
 .venv
 __pycache__
 *.pyc
-.env
+*.pyo
+*.pyd
 .python-version
 
-# Memory
-memory/
+# Environment & Secrets
+.env
+.env.*
+
+# Tests and caches
+tests/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+htmlcov/
+*.log
+
+# Deployment and Local runner files
+deploy_to_gcp.ps1
+undeploy_from_gcp.ps1
+compose.yaml
+cloudbuild.yaml
+
+# IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.directory
+
+# Unrelated and Reference files
+MercadolibreComponent.php
+README.md
 
 # Agents & Graphify
 .opencode/
@@ -15,3 +49,7 @@ memory/
 graphify-out/
 .graphify*
 AGENTS.md
+.sisyphus/
+
+# Memory & Audits
+memory/

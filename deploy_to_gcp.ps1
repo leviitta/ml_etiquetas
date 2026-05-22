@@ -117,6 +117,10 @@ $dbExists = gcloud sql instances describe $DB_INSTANCE_NAME --project $PROJECT_I
 if (-not $dbExists) {
     Write-Host "      Creando instancia de PostgreSQL (esto tomará unos minutos)..." -ForegroundColor Yellow
     gcloud sql instances create $DB_INSTANCE_NAME --database-version=POSTGRES_15 --cpu=1 --memory=3840MiB --region=$REGION --project $PROJECT_ID
+    
+    Write-Host "      Optimizando Cloud SQL para costos (Storage Auto-grow, Retención de Backups a 3 días)..." -ForegroundColor Yellow
+    gcloud sql instances patch $DB_INSTANCE_NAME --storage-auto-increase --backup-start-time 03:00 --retained-backups-count 3 --project $PROJECT_ID --quiet
+
     Write-Host "      Configurando contraseña de usuario $DB_USER..." -ForegroundColor Yellow
     gcloud sql users set-password $DB_USER --instance=$DB_INSTANCE_NAME --password=$DB_PASSWORD --project $PROJECT_ID
     Write-Host "      Creando base de datos $DB_NAME..." -ForegroundColor Yellow
