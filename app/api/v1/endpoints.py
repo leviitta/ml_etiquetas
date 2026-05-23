@@ -2,7 +2,7 @@ import os
 import uuid
 import shutil
 import tempfile
-from typing import List
+from typing import List, Dict, Any
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi import APIRouter, Request, File, UploadFile, BackgroundTasks
@@ -107,10 +107,6 @@ async def extract_label(
 
         # Procesar todos los archivos y generar un único PDF optimizado
         process_multiple_labels(input_paths, output_path)
-        
-        # 2. Registrar el uso de cada archivo exitosamente procesado
-        for _ in range(num_files):
-            await register_usage(identifier)
             
     except Exception as e:
         temp_dir_obj.cleanup()
@@ -125,3 +121,20 @@ async def extract_label(
         media_type="application/pdf", 
         filename="etiquetas_optimizadas.pdf"
     )
+
+@router.post("/quota/register")
+async def register_quota_usage(request: Request, payload: Dict[str, Any]):
+    """Registra el uso de cuota en la base de datos cuando se descarga la etiqueta"""
+    user = request.session.get('user')
+    if user and user.get("email"):
+        identifier = user["email"]
+    else:
+        identifier = request.session.get("anon_id")
+        if not identifier:
+            return JSONResponse(status_code=400, content={"error": "Sesión inválida."})
+            
+    count = payload.get("count", 1)
+    for _ in range(count):
+        await register_usage(identifier)
+        
+    return JSONResponse(content={"success": True})

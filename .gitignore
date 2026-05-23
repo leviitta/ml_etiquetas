@@ -32,6 +32,8 @@ Thumbs.db
 
 # Reference & Temporary Files
 MercadolibreComponent.php
+data/
+*.pdf
 
 # Agents & Graphify
 .opencode/

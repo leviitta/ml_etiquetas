@@ -42,7 +42,7 @@ if ($confirmation -notmatch "^[sS]") {
 }
 
 Write-Host ""
-Write-Host "[1/4] Eliminando el servicio de Google Cloud Run..." -ForegroundColor Yellow
+Write-Host "[1/5] Eliminando el servicio de Google Cloud Run..." -ForegroundColor Yellow
 gcloud run services delete $SERVICE --region $REGION --project $PROJECT_ID --quiet
 
 if ($LASTEXITCODE -ne 0) {
@@ -63,11 +63,11 @@ if ($CUSTOM_DOMAIN) {
 Write-Host ""
 $saConfirmation = Read-Host "¿Deseas también eliminar la cuenta de servicio '$SERVICE_ACCOUNT'? (S/N)"
 if ($saConfirmation -match "^[sS]") {
-    Write-Host "[3/4] Eliminando la cuenta de servicio..." -ForegroundColor Yellow
+    Write-Host "[3/5] Eliminando la cuenta de servicio..." -ForegroundColor Yellow
     gcloud iam service-accounts delete $SA_EMAIL --project $PROJECT_ID --quiet
     Write-Host "✅ Cuenta de servicio eliminada." -ForegroundColor Green
 } else {
-    Write-Host "[3/4] Saltando eliminación de la cuenta de servicio." -ForegroundColor DarkGray
+    Write-Host "[3/5] Saltando eliminación de la cuenta de servicio." -ForegroundColor DarkGray
 }
 
 Write-Host ""

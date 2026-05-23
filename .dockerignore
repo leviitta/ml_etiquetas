@@ -42,6 +42,9 @@ Thumbs.db
 # Unrelated and Reference files
 MercadolibreComponent.php
 README.md
+data/
+scripts/
+*.pdf
 
 # Agents & Graphify
 .opencode/

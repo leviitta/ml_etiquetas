@@ -122,8 +122,9 @@
             color: var(--text-primary);
             min-height: 100vh;
             display: flex;
-            align-items: flex-start;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
             padding: 1rem 2rem;
             line-height: 1.5;
         }
@@ -961,6 +962,14 @@
 
             // 2. Actualizar contadores SPA (diferido)
             if (pendingFilesProcessed > 0) {
+                fetch('/api/v1/quota/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ count: pendingFilesProcessed })
+                }).catch(err => console.error("Error registrando cuota:", err));
+
                 const usedQuotaSpan = document.getElementById('usedQuotaNumber');
                 if (usedQuotaSpan) {
                     let currentVal = parseInt(usedQuotaSpan.textContent.trim()) || 0;

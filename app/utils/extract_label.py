@@ -1,6 +1,6 @@
 import fitz  # PyMuPDF
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 def get_label_rect(page: fitz.Page) -> fitz.Rect:
     """Encuentra y devuelve el bounding box de la etiqueta en la mitad izquierda."""
@@ -69,8 +69,78 @@ def extract_label_from_pdf(input_pdf_path: str, output_pdf_path: Optional[str] =
             
     return str(output_path)
 
+def extract_product_details(doc: fitz.Document) -> str:
+    """Extrae y formatea detalles de empaquetado para múltiples productos desde la página 1."""
+    if len(doc) < 2:
+        return "Sin detalles de producto"
+        
+    page1 = doc[1]
+    blocks = page1.get_text("blocks")
+    
+    # Filtrar columna derecha de productos (x0 >= 200) y descartar cabeceras/firmas (100 <= y0 < 700)
+    prod_blocks = []
+    for b in blocks:
+        if isinstance(b, (tuple, list)) and len(b) >= 5:
+            x0, y0, text_val = b[0], b[1], b[4]
+            if isinstance(x0, (int, float)) and x0 >= 200 and isinstance(y0, (int, float)) and 100 <= y0 < 700:
+                prod_blocks.append((x0, y0, text_val))
+                    
+    prod_blocks.sort(key=lambda b: b[1])  # Ordenar de arriba a abajo
+    
+    products: List[Dict[str, Any]] = []
+    current_product: Optional[Dict[str, Any]] = None
+    has_qty = False
+    
+    for b in prod_blocks:
+        text = str(b[2]).strip()
+        if not text:
+            continue
+            
+        is_qty = text.startswith("Cantidad:")
+        contains_colon = ":" in text
+        
+        # DETECTAR NUEVO PRODUCTO:
+        # Si ya registramos la cantidad del producto actual,
+        # y encontramos un bloque sin dos puntos (:), es el título del siguiente producto.
+        if current_product is None or (has_qty and not contains_colon):
+            if current_product:
+                products.append(current_product)
+            current_product = {
+                "title": text,
+                "qty": "Cantidad: 1",
+                "attrs": []
+            }
+            has_qty = False
+        else:
+            if is_qty:
+                current_product["qty"] = text
+                has_qty = True
+            elif contains_colon:
+                if has_qty:
+                    current_product["attrs"].append(text)
+                else:
+                    current_product["title"] += " " + text
+            else:
+                current_product["title"] += " " + text
+                
+    if current_product:
+        products.append(current_product)
+        
+    formatted_items = []
+    for i, p in enumerate(products, 1):
+        p_title = " ".join(p["title"].split())
+        p_qty = p["qty"]
+        p_attrs = ", ".join(p["attrs"])
+        
+        item_str = f"{i}. {p_title} ({p_qty})"
+        if p_attrs:
+            item_str += f"\n   {p_attrs}"
+        formatted_items.append(item_str)
+        
+    return "\n\n".join(formatted_items)
+
 def process_multiple_labels(input_paths: List[str], output_path: str) -> str:
-    """Procesa múltiples PDFs, extrae la etiqueta y las organiza en una cuadrícula 2x3."""
+    """Procesa múltiples PDFs, extrae la etiqueta y las organiza en una cuadrícula 2x3 con detalles del producto."""
     merged_doc = fitz.open()
     a4_rect = fitz.paper_rect("a4")
     
@@ -81,10 +151,12 @@ def process_multiple_labels(input_paths: List[str], output_path: str) -> str:
     cell_width = a4_rect.width / cols
     cell_height = a4_rect.height / rows
     
-    margin_x, margin_y = 10, 10
+    # Margen para posicionar los elementos dentro de cada celda de la grilla
+    margin_x = 8
+    margin_y = 8
     
-    label_width = a4_rect.width / 3 - 2 * margin_x
-    label_height = a4_rect.height / 2 - 2 * margin_y
+    label_width = cell_width - 2 * margin_x
+    label_height = 290  # Reservar altura fija para la etiqueta de envío
     
     current_page = None
     label_count = 0
@@ -111,6 +183,7 @@ def process_multiple_labels(input_paths: List[str], output_path: str) -> str:
             cell_start_x = col * cell_width
             cell_start_y = row * cell_height
             
+            # 1. Dibujar etiqueta de envío (Zona Superior)
             x0 = cell_start_x + margin_x
             y0 = cell_start_y + margin_y
             x1 = x0 + label_width
@@ -118,6 +191,32 @@ def process_multiple_labels(input_paths: List[str], output_path: str) -> str:
             
             target_rect = fitz.Rect(x0, y0, x1, y1)
             current_page.show_pdf_page(target_rect, doc, 0, clip=src_rect)
+            
+            # 2. Dibujar cuadro de productos (Zona Inferior)
+            product_y0 = y1 + 5
+            product_y1 = cell_start_y + cell_height - margin_y
+            product_rect = fitz.Rect(x0, product_y0, x1, product_y1)
+            
+            # Caja contenedora con fondo gris claro y borde sutil
+            current_page.draw_rect(product_rect, color=(0.8, 0.8, 0.8), fill=(0.96, 0.96, 0.96), width=0.5)
+            
+            # Obtener y escribir detalles del producto
+            product_text = extract_product_details(doc)
+            
+            text_padding = 4
+            text_rect = fitz.Rect(
+                x0 + text_padding, 
+                product_y0 + text_padding, 
+                x1 - text_padding, 
+                product_y1 - text_padding
+            )
+            current_page.insert_textbox(
+                text_rect, 
+                product_text, 
+                fontsize=6.5, 
+                fontname="helv", 
+                color=(0.1, 0.1, 0.1)
+            )
             
             label_count += 1
             

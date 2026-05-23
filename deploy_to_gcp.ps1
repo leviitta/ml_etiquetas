@@ -31,7 +31,18 @@ $CUSTOM_DOMAIN = $envVars["CUSTOM_DOMAIN"]
 if ($CUSTOM_DOMAIN) {
     $SERVICE_URL = "https://$CUSTOM_DOMAIN"
 } else {
-    $SERVICE_URL = "https://$SERVICE-890639424998.$REGION.run.app"
+    Write-Host "Obteniendo número de proyecto para URL..." -ForegroundColor DarkGray
+    $PROJECT_NUMBER = (gcloud projects describe $PROJECT_ID --format="value(projectNumber)" --project $PROJECT_ID 2>$null)
+    if (-not $PROJECT_NUMBER) {
+        $CLIENT_ID = $envVars["GOOGLE_CLIENT_ID"]
+        if ($CLIENT_ID -match "^(\d+)-") {
+            $PROJECT_NUMBER = $Matches[1]
+        } else {
+            $PROJECT_NUMBER = "890639424998"
+        }
+    }
+    $PROJECT_NUMBER = $PROJECT_NUMBER.ToString().Trim()
+    $SERVICE_URL = "https://$SERVICE-$PROJECT_NUMBER.$REGION.run.app"
 }
 
 # Base de datos
@@ -90,7 +101,7 @@ Write-Host ""
 
 # 1. Habilitar APIs necesarias
 Write-Host "[1/7] Habilitando APIs de Google Cloud..." -ForegroundColor Yellow
-gcloud services enable secretmanager.googleapis.com run.googleapis.com cloudbuild.googleapis.com iam.googleapis.com sqladmin.googleapis.com --project $PROJECT_ID
+gcloud services enable secretmanager.googleapis.com run.googleapis.com cloudbuild.googleapis.com iam.googleapis.com sqladmin.googleapis.com artifactregistry.googleapis.com --project $PROJECT_ID
 
 # 2. Gestionar la Cuenta de Servicio
 Write-Host "[2/7] Verificando cuenta de servicio..." -ForegroundColor Yellow
@@ -109,7 +120,7 @@ Write-Host "      Asignando rol de Cloud SQL Client a la cuenta de servicio..." 
 gcloud projects add-iam-policy-binding $PROJECT_ID `
     --member="serviceAccount:$SA_EMAIL" `
     --role="roles/cloudsql.client" `
-    --condition=None --quiet > $null
+    --quiet > $null
 
 # 3. Gestionar Base de Datos (Cloud SQL PostgreSQL)
 Write-Host "[3/7] Configurando base de datos Cloud SQL..." -ForegroundColor Yellow
@@ -121,8 +132,13 @@ if (-not $dbExists) {
     Write-Host "      Optimizando Cloud SQL para costos (Storage Auto-grow, Retención de Backups a 3 días)..." -ForegroundColor Yellow
     gcloud sql instances patch $DB_INSTANCE_NAME --storage-auto-increase --backup-start-time 03:00 --retained-backups-count 3 --project $PROJECT_ID --quiet
 
-    Write-Host "      Configurando contraseña de usuario $DB_USER..." -ForegroundColor Yellow
-    gcloud sql users set-password $DB_USER --instance=$DB_INSTANCE_NAME --password=$DB_PASSWORD --project $PROJECT_ID
+    if ($DB_USER -ne "postgres") {
+        Write-Host "      Creando usuario de base de datos $DB_USER..." -ForegroundColor Yellow
+        gcloud sql users create $DB_USER --instance=$DB_INSTANCE_NAME --password=$DB_PASSWORD --project $PROJECT_ID
+    } else {
+        Write-Host "      Configurando contraseña para usuario postgres..." -ForegroundColor Yellow
+        gcloud sql users set-password postgres --instance=$DB_INSTANCE_NAME --password=$DB_PASSWORD --project $PROJECT_ID
+    }
     Write-Host "      Creando base de datos $DB_NAME..." -ForegroundColor Yellow
     gcloud sql databases create $DB_NAME --instance=$DB_INSTANCE_NAME --project $PROJECT_ID
 } else {
