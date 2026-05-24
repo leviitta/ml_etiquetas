@@ -1,6 +1,11 @@
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '-t', 'us-central1-docker.pkg.dev/ml-etiquetas/ml-etiquetas-repo/app:latest', '.' ]
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    docker pull us-central1-docker.pkg.dev/ml-etiquetas/ml-etiquetas-repo/app:latest || true
+    docker build --cache-from us-central1-docker.pkg.dev/ml-etiquetas/ml-etiquetas-repo/app:latest -t us-central1-docker.pkg.dev/ml-etiquetas/ml-etiquetas-repo/app:latest .
   env:
     - 'DOCKER_BUILDKIT=1'
 images:

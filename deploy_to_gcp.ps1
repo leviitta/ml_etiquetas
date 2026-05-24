@@ -127,7 +127,7 @@ Write-Host "[3/7] Configurando base de datos Cloud SQL..." -ForegroundColor Yell
 $dbExists = gcloud sql instances describe $DB_INSTANCE_NAME --project $PROJECT_ID 2>$null
 if (-not $dbExists) {
     Write-Host "      Creando instancia de PostgreSQL (esto tomará unos minutos)..." -ForegroundColor Yellow
-    gcloud sql instances create $DB_INSTANCE_NAME --database-version=POSTGRES_15 --cpu=1 --memory=3840MiB --region=$REGION --project $PROJECT_ID
+    gcloud sql instances create $DB_INSTANCE_NAME --database-version=POSTGRES_15 --tier=db-f1-micro --region=$REGION --project $PROJECT_ID
     
     Write-Host "      Optimizando Cloud SQL para costos (Storage Auto-grow, Retención de Backups a 3 días)..." -ForegroundColor Yellow
     gcloud sql instances patch $DB_INSTANCE_NAME --storage-auto-increase --backup-start-time 03:00 --retained-backups-count 3 --project $PROJECT_ID --quiet
@@ -215,7 +215,8 @@ gcloud run deploy $SERVICE `
     --platform managed `
     --port 8080 `
     --allow-unauthenticated `
-    --memory 2Gi `
+    --memory 1Gi `
+    --max-instances 5 `
     --execution-environment gen2 `
     --add-cloudsql-instances $DB_CONNECTION_NAME `
     --service-account $SA_EMAIL `

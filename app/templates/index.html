@@ -78,6 +78,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css"/>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -422,6 +423,55 @@
         .alert.fade-out {
             animation: slideOut 0.3s ease forwards;
         }
+
+        /* Integración visual de driver.js con el tema oscuro de MeliOps */
+        .driver-popover {
+            background-color: #1e293b !important;
+            color: #f8fafc !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+            font-family: 'Inter', sans-serif !important;
+            padding: 1.25rem !important;
+        }
+        .driver-popover-title {
+            color: #ffffff !important;
+            font-size: 1.1rem !important;
+            font-weight: 600 !important;
+            margin-bottom: 0.5rem !important;
+        }
+        .driver-popover-description {
+            color: #94a3b8 !important;
+            font-size: 0.9rem !important;
+            line-height: 1.5 !important;
+        }
+        .driver-popover-close-btn {
+            color: #94a3b8 !important;
+            font-size: 1.1rem !important;
+        }
+        .driver-popover-close-btn:hover {
+            color: #ffffff !important;
+        }
+        .driver-popover-navigation-btns button {
+            background-color: #3b82f6 !important;
+            color: #ffffff !important;
+            border: none !important;
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+            padding: 0.4rem 0.8rem !important;
+            font-size: 0.85rem !important;
+            text-shadow: none !important;
+            transition: background-color 0.2s ease !important;
+        }
+        .driver-popover-navigation-btns button:hover {
+            background-color: #2563eb !important;
+        }
+        .driver-popover-progress-text {
+            color: #94a3b8 !important;
+            font-size: 0.8rem !important;
+        }
+        .driver-popover-arrow {
+            border-color: #1e293b !important;
+        }
     </style>
 </head>
 
@@ -444,7 +494,7 @@
                     </div>
                     {% else %}
                     <div style="display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.25rem;">
-                        <a href="/api/v1/auth/login" style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.1); color: white; padding: 0.35rem 0.85rem; border-radius: 99px; text-decoration: none; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.2); transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'">
+                        <a id="loginBtn" href="/api/v1/auth/login" style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.1); color: white; padding: 0.35rem 0.85rem; border-radius: 99px; text-decoration: none; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.2); transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="14px" height="14px">
                                 <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
                                 <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
@@ -490,38 +540,78 @@
                     </div>
 
                     {% if quota_status %}
-                    {% if quota_status.active_plan_type == 'infinity' %}
-                    {% set percentage = 100 %}
-                    {% elif quota_status.active_plan_type == 'pro' %}
-                    {% set percentage = (quota_status.used_month / quota_status.monthly_limit * 100) %}
-                    {% else %}
-                    {% set percentage = (quota_status.used_today / quota_status.daily_limit * 100) %}
-                    {% endif %}
+                    {% set daily_percentage = (quota_status.used_today / quota_status.daily_limit * 100) if quota_status.daily_limit > 0 else 0 %}
+                    {% set monthly_percentage = (quota_status.used_month / quota_status.monthly_limit * 100) if quota_status.monthly_limit > 0 else 0 %}
                     <div
                         style="margin-top: 0.5rem; background: rgba(30, 41, 59, 0.8); padding: 0.75rem 1rem; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        
+                        <!-- SECCIÓN STARTER (DOBLE BARRA: DIARIA Y MENSUAL) -->
+                        {% if quota_status.active_plan_type == 'starter' %}
+                        
+                        <!-- 1. Cuota Diaria (Starter) -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <svg style="width: 18px; height: 18px; color: var(--accent-primary); flex-shrink: 0;"
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                    </path>
+                                <svg style="width: 16px; height: 16px; color: var(--accent-primary); flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <span
-                                    style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500; letter-spacing: 0.02em; white-space: nowrap;">Etiquetas
-                                    procesadas {% if quota_status.has_active_payment %}(Mes){% else %}(Hoy){% endif
-                                    %}</span>
+                                <span style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.02em; white-space: nowrap;">Límite Diario (Hoy)</span>
+                            </div>
+                            
+                            <div style="flex: 1; text-align: center; white-space: nowrap; padding: 0 0.5rem;">
+                                <span id="quotaWarningText" style="font-size: 0.7rem; font-weight: 600; {% if daily_percentage >= 100 %} color: var(--error-color); {% elif daily_percentage >= 50 %} color: var(--accent-primary); {% else %} display: none; {% endif %}">
+                                    {% if daily_percentage >= 100 %} ¡Llegaste al límite diario! 🛑 {% elif daily_percentage >= 50 %} ¡Te acercas al límite diario! 🚀 {% endif %}
+                                </span>
+                            </div>
+
+                            <div style="text-align: right;">
+                                <span id="usedQuotaCount" style="font-weight: 700; font-size: 0.85rem; color: #fff;">
+                                    <span id="usedQuotaNumber">{{ quota_status.used_today }}</span><span style="color: var(--text-secondary); font-weight: 500;">/{{ quota_status.daily_limit }}</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div style="width: 100%; background: rgba(0,0,0,0.3); border-radius: 99px; height: 8px; overflow: hidden; position: relative; margin-bottom: 0.85rem;">
+                            <div id="quotaProgressBar" style="height: 100%; background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%); width: {{ daily_percentage }}%; box-shadow: 0 0 8px rgba(59, 130, 246, 0.4); transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                        </div>
+
+                        <!-- 2. Cuota Mensual (Starter) -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <svg style="width: 16px; height: 16px; color: #a855f7; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <span style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.02em; white-space: nowrap;">Acumulado Mensual (Mes)</span>
+                            </div>
+                            
+                            <div style="flex: 1; text-align: center; white-space: nowrap; padding: 0 0.5rem;">
+                                <span id="monthlyQuotaWarningText" style="font-size: 0.7rem; font-weight: 600; {% if monthly_percentage >= 100 %} color: var(--error-color); {% elif monthly_percentage >= 50 %} color: #c084fc; {% else %} display: none; {% endif %}">
+                                    {% if monthly_percentage >= 100 %} ¡Límite mensual alcanzado! 🛑 {% elif monthly_percentage >= 50 %} ¡Te acercas al límite mensual! 🚀 {% endif %}
+                                </span>
+                            </div>
+
+                            <div style="text-align: right;">
+                                <span id="usedMonthlyQuotaCount" style="font-weight: 700; font-size: 0.85rem; color: #fff;">
+                                    <span id="usedMonthlyQuotaNumber">{{ quota_status.used_month }}</span><span style="color: var(--text-secondary); font-weight: 500;">/{{ quota_status.monthly_limit }}</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div style="width: 100%; background: rgba(0,0,0,0.3); border-radius: 99px; height: 8px; overflow: hidden; position: relative;">
+                            <div id="monthlyQuotaProgressBar" style="height: 100%; background: linear-gradient(90deg, #8b5cf6 0%, #c084fc 100%); width: {{ monthly_percentage }}%; box-shadow: 0 0 8px rgba(139, 92, 246, 0.4); transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                        </div>
+
+                        <!-- SECCIÓN PRO/INFINITY (BARRA ÚNICA MENSUAL O INFINITA) -->
+                        {% else %}
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <svg style="width: 18px; height: 18px; color: {% if quota_status.active_plan_type == 'infinity' %}#c084fc{% else %}var(--accent-primary){% endif %}; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500; letter-spacing: 0.02em; white-space: nowrap;">Etiquetas procesadas (Mes)</span>
                             </div>
 
                             {% if quota_status.active_plan_type != 'infinity' %}
-                            <div style="flex: 1; text-align: center; white-space: nowrap;">
-                                <span id="quotaWarningText"
-                                    style="font-size: 0.75rem; font-weight: 600; 
-                                    {% if percentage >= 100 %} color: var(--error-color); {% elif percentage >= 50 %} color: var(--accent-primary); {% else %} display: none; {% endif %}">
-                                    {% if percentage >= 100 %} ¡Llegaste al límite! 🛑 {% elif percentage >= 50 %} ¡Te
-                                    acercas al límite! 🚀 {% endif %}
+                            <div style="flex: 1; text-align: center; white-space: nowrap; padding: 0 0.5rem;">
+                                <span id="quotaWarningText" style="font-size: 0.75rem; font-weight: 600; {% if monthly_percentage >= 100 %} color: var(--error-color); {% elif monthly_percentage >= 50 %} color: var(--accent-primary); {% else %} display: none; {% endif %}">
+                                    {% if monthly_percentage >= 100 %} ¡Llegaste al límite! 🛑 {% elif monthly_percentage >= 50 %} ¡Te acercas al límite! 🚀 {% endif %}
                                 </span>
                             </div>
                             {% endif %}
@@ -529,32 +619,24 @@
                             <div style="text-align: right;">
                                 <span id="usedQuotaCount" style="font-weight: 700; font-size: 0.9rem; color: #fff;">
                                     {% if quota_status.active_plan_type == 'infinity' %}
-                                    <span id="usedQuotaNumber">{{ quota_status.used_month }}</span><span
-                                        style="color: var(--text-secondary); font-weight: 500; font-size: 1.8rem; line-height: 0.8; vertical-align: middle; position: relative; top: -2px;">/∞</span>
-                                    {% elif quota_status.active_plan_type == 'pro' %}
-                                    <span id="usedQuotaNumber">{{ quota_status.used_month }}</span><span
-                                        style="color: var(--text-secondary); font-weight: 500;">/{{
-                                        quota_status.monthly_limit }}</span>
+                                    <span id="usedQuotaNumber">{{ quota_status.used_month }}</span><span style="color: var(--text-secondary); font-weight: 500; font-size: 1.8rem; line-height: 0.8; vertical-align: middle; position: relative; top: -2px;">/∞</span>
                                     {% else %}
-                                    <span id="usedQuotaNumber">{{ quota_status.used_today }}</span><span
-                                        style="color: var(--text-secondary); font-weight: 500;">/{{
-                                        quota_status.daily_limit
-                                        }}</span>
+                                    <span id="usedQuotaNumber">{{ quota_status.used_month }}</span><span style="color: var(--text-secondary); font-weight: 500;">/{{ quota_status.monthly_limit }}</span>
                                     {% endif %}
                                 </span>
                             </div>
                         </div>
-                        <div
-                            style="width: 100%; background: rgba(0,0,0,0.3); border-radius: 99px; height: 10px; overflow: hidden; position: relative;">
+                        <div style="width: 100%; background: rgba(0,0,0,0.3); border-radius: 99px; height: 10px; overflow: hidden; position: relative;">
                             <div id="quotaProgressBar" style="height: 100%; 
                                 {% if quota_status.active_plan_type == 'infinity' %}
                                 background: linear-gradient(90deg, #c084fc 0%, #a855f7 100%); width: 100%; box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
                                 {% else %}
-                                background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%); width: {{ percentage }}%; box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+                                background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%); width: {{ monthly_percentage }}%; box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
                                 {% endif %}
                                 transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);">
                             </div>
                         </div>
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>
@@ -885,18 +967,29 @@
         const errorMessage = document.getElementById('errorMessage');
         const labelsConfigContainer = document.getElementById('labelsConfigContainer');
 
-        const remainingQuota = {% if quota_status %}{{ (quota_status.monthly_limit - quota_status.used_month) if quota_status.has_active_payment else (quota_status.daily_limit - quota_status.used_today) }}{% else %}0{% endif %};
-        let currentRemainingQuota = remainingQuota;
-        const currentQuotaLimit = {% if quota_status %}{{ quota_status.monthly_limit if quota_status.has_active_payment else quota_status.daily_limit }}{% else %}0{% endif %};
+        const dailyLimit = {% if quota_status %}{{ quota_status.daily_limit }}{% else %}0{% endif %};
+        const monthlyLimit = {% if quota_status %}{{ quota_status.monthly_limit }}{% else %}0{% endif %};
+        let currentUsedToday = {% if quota_status %}{{ quota_status.used_today }}{% else %}0{% endif %};
+        let currentUsedMonth = {% if quota_status %}{{ quota_status.used_month }}{% else %}0{% endif %};
+        const activePlanType = "{% if quota_status %}{{ quota_status.active_plan_type }}{% else %}starter{% endif %}";
         const isInfinityPlan = {% if quota_status and quota_status.active_plan_type == 'infinity' %}true{% else %} false{% endif %};
         const isLoggedIn = {% if user %}true{% else %} false{% endif %};
         let pendingFilesProcessed = 0;
 
+        function getRemainingQuota() {
+            if (isInfinityPlan) return 999999;
+            if (activePlanType === 'starter') {
+                return Math.min(dailyLimit - currentUsedToday, monthlyLimit - currentUsedMonth);
+            }
+            return monthlyLimit - currentUsedMonth;
+        }
+
         fileInput.addEventListener('change', function (e) {
             const files = this.files;
             if (files && files.length > 0) {
-                if (!isInfinityPlan && currentRemainingQuota > 0 && files.length > currentRemainingQuota) {
-                    errorMessage.textContent = `Has seleccionado ${files.length} etiquetas, pero solo te quedan ${currentRemainingQuota} disponibles en tu cuota. Por favor selecciona menos archivos.`;
+                const remaining = getRemainingQuota();
+                if (!isInfinityPlan && remaining > 0 && files.length > remaining) {
+                    errorMessage.textContent = `Has seleccionado ${files.length} etiquetas, pero solo te quedan ${remaining} disponibles en tu cuota. Por favor selecciona menos archivos.`;
                     showAutoDismissAlert(errorAlert);
                     fileNameDisplay.style.display = 'none';
                     submitBtn.disabled = true;
@@ -970,39 +1063,69 @@
                     body: JSON.stringify({ count: pendingFilesProcessed })
                 }).catch(err => console.error("Error registrando cuota:", err));
 
+                // Incrementar variables de estado en memoria
+                currentUsedToday += pendingFilesProcessed;
+                currentUsedMonth += pendingFilesProcessed;
+
+                // Actualizar números en la interfaz
                 const usedQuotaSpan = document.getElementById('usedQuotaNumber');
                 if (usedQuotaSpan) {
-                    let currentVal = parseInt(usedQuotaSpan.textContent.trim()) || 0;
-                    usedQuotaSpan.textContent = (currentVal + pendingFilesProcessed) + "";
+                    usedQuotaSpan.textContent = (activePlanType === 'starter' ? currentUsedToday : currentUsedMonth) + "";
+                }
+
+                const usedMonthlyQuotaSpan = document.getElementById('usedMonthlyQuotaNumber');
+                if (usedMonthlyQuotaSpan) {
+                    usedMonthlyQuotaSpan.textContent = currentUsedMonth + "";
                 }
 
                 if (!isInfinityPlan) {
-                    currentRemainingQuota -= pendingFilesProcessed;
-                    if (currentQuotaLimit > 0) {
-                        const newPercentage = ((currentQuotaLimit - currentRemainingQuota) / currentQuotaLimit) * 100;
-                        const progressBar = document.getElementById('quotaProgressBar');
-                        if (progressBar) {
-                            progressBar.style.width = newPercentage + '%';
-                        }
+                    // Actualizar barra diaria (si existe, para Starter)
+                    if (activePlanType === 'starter' && dailyLimit > 0) {
+                        const dailyPct = Math.min((currentUsedToday / dailyLimit) * 100, 100);
+                        const dailyBar = document.getElementById('quotaProgressBar');
+                        if (dailyBar) dailyBar.style.width = dailyPct + '%';
 
                         const warningText = document.getElementById('quotaWarningText');
                         if (warningText) {
-                            if (newPercentage >= 100) {
+                            if (dailyPct >= 100) {
                                 warningText.style.display = 'inline-block';
                                 warningText.style.color = 'var(--error-color)';
-                                warningText.textContent = '¡Llegaste al límite! 🛑';
-                            } else if (newPercentage >= 50) {
+                                warningText.textContent = '¡Llegaste al límite diario! 🛑';
+                            } else if (dailyPct >= 50) {
                                 warningText.style.display = 'inline-block';
                                 warningText.style.color = 'var(--accent-primary)';
-                                warningText.textContent = '¡Te acercas al límite! 🚀';
+                                warningText.textContent = '¡Te acercas al límite diario! 🚀';
                             } else {
                                 warningText.style.display = 'none';
                             }
                         }
                     }
 
-                    // 3. Mostrar límite de cuota alcanzado si se acaba el saldo
-                    if (currentRemainingQuota <= 0) {
+                    // Actualizar barra mensual (si existe)
+                    if (monthlyLimit > 0) {
+                        const monthlyPct = Math.min((currentUsedMonth / monthlyLimit) * 100, 100);
+                        const monthlyBar = document.getElementById(activePlanType === 'starter' ? 'monthlyQuotaProgressBar' : 'quotaProgressBar');
+                        if (monthlyBar) monthlyBar.style.width = monthlyPct + '%';
+
+                        const monthlyWarningText = document.getElementById(activePlanType === 'starter' ? 'monthlyQuotaWarningText' : 'quotaWarningText');
+                        if (monthlyWarningText) {
+                            if (monthlyPct >= 100) {
+                                monthlyWarningText.style.display = 'inline-block';
+                                monthlyWarningText.style.color = 'var(--error-color)';
+                                monthlyWarningText.textContent = activePlanType === 'starter' ? '¡Límite mensual alcanzado! 🛑' : '¡Llegaste al límite! 🛑';
+                            } else if (monthlyPct >= 50) {
+                                monthlyWarningText.style.display = 'inline-block';
+                                monthlyWarningText.style.color = activePlanType === 'starter' ? '#c084fc' : 'var(--accent-primary)';
+                                monthlyWarningText.textContent = activePlanType === 'starter' ? '¡Te acercas al límite mensual! 🚀' : '¡Te acercas al límite! 🚀';
+                            } else {
+                                monthlyWarningText.style.display = 'none';
+                            }
+                        }
+                    }
+
+                    // 3. Mostrar límite de cuota alcanzado si se acaba el saldo de cualquier límite
+                    const remaining = getRemainingQuota();
+                    if (remaining <= 0) {
                         document.getElementById('uploadUI').style.display = 'none';
                         document.getElementById('quotaExceededUI').style.display = 'block';
                     }
@@ -1134,6 +1257,84 @@
                 btnText.textContent = 'Procesar Etiquetas';
                 btnIcon.style.display = 'inline-block';
                 spinner.style.display = 'none';
+            }
+        });
+    </script>
+
+    <!-- Tutorial Onboarding para nuevos usuarios con driver.js -->
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Correr el tutorial si el usuario no lo ha completado antes en este navegador
+            if (!localStorage.getItem('meliops_tutorial_seen')) {
+                // Pequeña espera para asegurar que la página se renderice y todo se monte de forma fluida
+                setTimeout(function () {
+                    if (window.driver && window.driver.js) {
+                        const driver = window.driver.js.driver;
+                        
+                        const steps = [
+                            {
+                                element: '#dropZone',
+                                popover: {
+                                    title: '🚀 Sube tus PDFs',
+                                    description: 'Arrastra y suelta aquí tus archivos PDF originales de Mercado Envíos. MeliOps extraerá de forma inteligente la etiqueta real, ignorando las instrucciones redundantes.',
+                                    position: 'bottom',
+                                    side: 'bottom',
+                                    align: 'start'
+                                }
+                            },
+                            {
+                                element: '#usedQuotaCount',
+                                popover: {
+                                    title: '📊 Control de tu Cuota',
+                                    description: 'Aquí puedes revisar cuántas etiquetas diarias o mensuales tienes disponibles para procesar de manera 100% gratuita.',
+                                    position: 'bottom',
+                                    side: 'bottom',
+                                    align: 'end'
+                                }
+                            }
+                        ];
+
+                        // Si el botón de login existe (el usuario es anónimo), invitarlo a loguearse
+                        const loginBtn = document.getElementById('loginBtn');
+                        if (loginBtn) {
+                            steps.push({
+                                element: '#loginBtn',
+                                popover: {
+                                    title: '🔐 Aumenta tus Límites Gratis',
+                                    description: 'Inicia sesión con tu cuenta de Google para elevar tu cuota diaria de etiquetas inmediatamente y de forma totalmente gratuita.',
+                                    position: 'bottom',
+                                    side: 'bottom',
+                                    align: 'center'
+                                }
+                            });
+                        }
+
+                        steps.push({
+                            element: '#submitBtn',
+                            popover: {
+                                title: '🖨️ Genera tu PDF optimizado',
+                                description: 'Haz clic aquí para procesar tus etiquetas. Recibirás un archivo PDF consolidado en formato A4 listo para imprimir y despachar más rápido.',
+                                position: 'top',
+                                side: 'top',
+                                align: 'center'
+                            }
+                        });
+
+                        const driverObj = driver({
+                            showProgress: true,
+                            steps: steps,
+                            nextBtnText: 'Siguiente →',
+                            prevBtnText: '← Anterior',
+                            doneBtnText: '¡Entendido! 🎉',
+                            onDestroyed: function () {
+                                localStorage.setItem('meliops_tutorial_seen', 'true');
+                            }
+                        });
+
+                        driverObj.drive();
+                    }
+                }, 1200);
             }
         });
     </script>
