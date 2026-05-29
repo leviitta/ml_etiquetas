@@ -15,14 +15,18 @@ from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 
 # Setup Google Cloud Logging if in GCP environment
-try:
-    import google.cloud.logging
-    client = google.cloud.logging.Client()
-    client.setup_logging()
-    logging.info("Google Cloud Logging successfully configured.")
-except Exception as e:
+if not os.getenv("TESTING"):
+    try:
+        import google.cloud.logging
+        client = google.cloud.logging.Client()
+        client.setup_logging()
+        logging.info("Google Cloud Logging successfully configured.")
+    except Exception as e:
+        logging.basicConfig(level=logging.INFO)
+        logging.info("Running locally or without GCP credentials, standard logging configured.")
+else:
     logging.basicConfig(level=logging.INFO)
-    logging.info("Running locally or without GCP credentials, standard logging configured.")
+    logging.info("Running in testing mode, standard logging configured.")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,7 +43,16 @@ app = FastAPI(
 )
 
 # Add Session Middleware for OAuth
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "una_clave_secreta_de_respaldo"))
+secret_key = os.getenv("SECRET_KEY")
+if not secret_key or secret_key == "una_clave_secreta_de_respaldo":
+    raise RuntimeError("SECRET_KEY is missing or insecure")
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=secret_key,
+    https_only=True,
+    same_site="lax"
+)
 
 class CustomStaticFiles(StaticFiles):
     def file_response(self, *args, **kwargs):

@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 os.environ["SECRET_KEY"] = "test-secret"
 os.environ["MP_ACCESS_TOKEN"] = "test-token"
+os.environ["TESTING"] = "1"
 
 patcher = patch("app.db.database.init_db", new_callable=AsyncMock)
 patcher.start()

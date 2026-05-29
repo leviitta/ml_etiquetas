@@ -8,6 +8,9 @@ Endpoints:
   POST /api/v1/payments/webhook             → IPN/Webhook de Mercado Pago
 """
 import os
+import hmac
+import hashlib
+import json
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -21,6 +24,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN", "")
+MP_WEBHOOK_SECRET = os.getenv("MP_WEBHOOK_SECRET", "")
 PAYMENT_PRO_AMOUNT = float(os.getenv("PAYMENT_PRO_AMOUNT", "4990"))
 PAYMENT_INFINITY_AMOUNT = float(os.getenv("PAYMENT_INFINITY_AMOUNT", "12990"))
 PAYMENT_UPGRADE_AMOUNT = float(os.getenv("PAYMENT_UPGRADE_AMOUNT", "8000"))
@@ -30,7 +34,7 @@ BASE_URL        = os.getenv("BASE_URL", "http://localhost:8000")
 MP_BASE_URL = "https://api.mercadopago.com"
 
 
-def _headers() -> dict:
+def _headers() -> dict[str, str]:
     if not MP_ACCESS_TOKEN:
         raise RuntimeError("MP_ACCESS_TOKEN no está configurado en .env")
     return {
@@ -243,6 +247,94 @@ async def payment_pending(request: Request):
     return RedirectResponse(url="/api/v1/?payment=pending")
 
 
+def verify_webhook_signature(request: Request, body_bytes: bytes) -> bool:
+    """
+    Verifica la firma HMAC-SHA256 de los webhooks de Mercado Pago.
+    """
+    if not MP_WEBHOOK_SECRET:
+        logger.error("MP_WEBHOOK_SECRET no está configurado.")
+        return False
+
+    x_signature = request.headers.get("x-signature", "")
+    x_request_id = request.headers.get("x-request-id", "")
+
+    if not x_signature:
+        logger.warning("Falta el encabezado x-signature.")
+        return False
+
+    # Parsear ts y v1 de x-signature
+    parts = x_signature.split(",")
+    ts = None
+    v1 = None
+    for part in parts:
+        keyValue = part.split("=", 1)
+        if len(keyValue) == 2:
+            key = keyValue[0].strip()
+            value = keyValue[1].strip()
+            if key == "ts":
+                ts = value
+            elif key == "v1":
+                v1 = value
+
+    if not ts or not v1:
+        logger.warning("Formato de x-signature inválido.")
+        return False
+
+    # Validar diferencia de timestamp (< 5 minutos)
+    try:
+        ts_val = int(ts)
+        # Mercado Pago envía ts en milisegundos
+        if ts_val > 1000000000000:
+            ts_time = datetime.fromtimestamp(ts_val / 1000, tz=timezone.utc)
+        else:
+            ts_time = datetime.fromtimestamp(ts_val, tz=timezone.utc)
+    except Exception as e:
+        logger.warning("Error parseando timestamp: %s", e)
+        return False
+
+    now = datetime.now(timezone.utc)
+    diff = abs((now - ts_time).total_seconds())
+    if diff > 300:  # 5 minutos
+        logger.warning("Timestamp del webhook expirado (diferencia de %s segundos).", diff)
+        return False
+
+    # Obtener data.id de query params o body
+    data_id = request.query_params.get("data.id") or request.query_params.get("id")
+    if not data_id:
+        try:
+            body = json.loads(body_bytes) if body_bytes else {}
+            data_id = body.get("data", {}).get("id") or body.get("id")
+        except Exception:
+            pass
+
+    data_id_str = str(data_id) if data_id is not None else ""
+
+    # Construir manifest
+    manifest_parts = []
+    if data_id_str:
+        manifest_parts.append(f"id:{data_id_str.lower()}")
+    if x_request_id:
+        manifest_parts.append(f"request-id:{x_request_id}")
+    if ts:
+        manifest_parts.append(f"ts:{ts}")
+
+    manifest = ";".join(manifest_parts) + ";" if manifest_parts else ""
+
+    # Calcular HMAC-SHA256
+    try:
+        hmac_obj = hmac.new(MP_WEBHOOK_SECRET.encode(), msg=manifest.encode(), digestmod=hashlib.sha256)
+        sha = hmac_obj.hexdigest()
+    except Exception as e:
+        logger.error("Error calculando HMAC: %s", e)
+        return False
+
+    if not hmac.compare_digest(sha, v1):
+        logger.warning("Firma de webhook inválida.")
+        return False
+
+    return True
+
+
 # ── Webhook IPN ──────────────────────────────────────────────────────────────
 
 @router.post("/webhook")
@@ -251,8 +343,12 @@ async def payment_webhook(request: Request):
     Webhook IPN de Mercado Pago.
     Verifica el pago consultando la API REST y actualiza la base de datos.
     """
+    body_bytes = await request.body()
+    if not verify_webhook_signature(request, body_bytes):
+        return JSONResponse(status_code=400, content={"error": "Firma inválida"})
+
     try:
-        body = await request.json()
+        body = json.loads(body_bytes) if body_bytes else {}
     except Exception:
         body = {}
 

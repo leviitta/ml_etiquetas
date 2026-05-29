@@ -60,6 +60,15 @@ def test_extract_no_files(client):
 
 
 @patch("app.api.v1.router_extract.ensure_user", new_callable=AsyncMock)
+def test_extract_file_too_large(mock_ensure_user, client):
+    large_content = b"%PDF-1.4 " + b"x" * (200 * 1024 + 1)
+    files = [("files", ("large.pdf", large_content, "application/pdf"))]
+    response = client.post("/api/v1/extract", files=files)
+    assert response.status_code == 400
+    assert "supera el límite de tamaño" in response.json()["error"]
+
+
+@patch("app.api.v1.router_extract.ensure_user", new_callable=AsyncMock)
 @patch("app.api.v1.router_extract.verify_quota_for_batch", new_callable=AsyncMock)
 def test_extract_quota_exceeded(mock_verify_quota, mock_ensure_user, client):
     mock_verify_quota.side_effect = QuotaExceededException(reason="daily", detail="Quota exceeded detail", quota_status={})
@@ -94,3 +103,47 @@ def test_extract_success(mock_process, mock_verify_quota, mock_ensure_user, clie
     assert response.content == b"%PDF-1.4 mock output pdf"
     mock_verify_quota.assert_called_once()
     mock_process.assert_called_once()
+
+
+def test_secret_key_validation():
+    import os
+    import sys
+    import importlib
+    import pytest
+    
+    orig_secret = os.environ.get("SECRET_KEY")
+    original_getenv = os.getenv
+    
+    def mock_getenv_none(key, default=None):
+        if key == "SECRET_KEY":
+            return None
+        return original_getenv(key, default)
+        
+    def mock_getenv_insecure(key, default=None):
+        if key == "SECRET_KEY":
+            return "una_clave_secreta_de_respaldo"
+        return original_getenv(key, default)
+    
+    try:
+        with patch("os.getenv", side_effect=mock_getenv_none):
+            with pytest.raises(RuntimeError, match="SECRET_KEY is missing or insecure"):
+                if "app.main" in sys.modules:
+                    importlib.reload(sys.modules["app.main"])
+                else:
+                    import app.main
+                
+        with patch("os.getenv", side_effect=mock_getenv_insecure):
+            with pytest.raises(RuntimeError, match="SECRET_KEY is missing or insecure"):
+                if "app.main" in sys.modules:
+                    importlib.reload(sys.modules["app.main"])
+                else:
+                    import app.main
+    finally:
+        if orig_secret is not None:
+            os.environ["SECRET_KEY"] = orig_secret
+        if "app.main" in sys.modules:
+            try:
+                importlib.reload(sys.modules["app.main"])
+            except Exception:
+                pass
+

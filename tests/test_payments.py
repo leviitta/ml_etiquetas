@@ -100,10 +100,12 @@ def test_payment_success_fraud_prevention(mock_http, mock_register_payment, mock
         assert "payment=failure" in response.headers["location"]
         mock_register_payment.assert_not_called()
 
+@patch("app.api.v1.payments.verify_webhook_signature")
 @patch("app.api.v1.payments.ensure_user", new_callable=AsyncMock)
 @patch("app.api.v1.payments.register_payment", new_callable=AsyncMock)
 @patch("app.api.v1.payments.httpx.AsyncClient")
-def test_webhook_payment_approved(mock_http, mock_register_payment, mock_ensure_user, client):
+def test_webhook_payment_approved(mock_http, mock_register_payment, mock_ensure_user, mock_verify_sig, client):
+    mock_verify_sig.return_value = True
     mock_ensure_user.return_value = None
     mock_register_payment.return_value = None
     
@@ -130,3 +132,77 @@ def test_webhook_payment_approved(mock_http, mock_register_payment, mock_ensure_
     assert response.status_code == 200
     assert response.json() == {"ok": True}
     mock_register_payment.assert_called_once()
+
+
+import hmac
+import hashlib
+import time
+
+@patch("app.api.v1.payments.ensure_user", new_callable=AsyncMock)
+@patch("app.api.v1.payments.register_payment", new_callable=AsyncMock)
+@patch("app.api.v1.payments.httpx.AsyncClient")
+def test_webhook_signature_verification_success(mock_http, mock_register_payment, mock_ensure_user, client):
+    mock_ensure_user.return_value = None
+    mock_register_payment.return_value = None
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "status": "approved",
+        "metadata": {"plan_type": "infinity", "user_email": "test@example.com"},
+        "transaction_amount": 12990,
+        "preference_id": "pref_123",
+        "payer": {"email": "payer@example.com"}
+    }
+    mock_client_instance = AsyncMock()
+    mock_client_instance.get.return_value = mock_response
+    mock_http.return_value.__aenter__.return_value = mock_client_instance
+
+    secret = "test_secret"
+    ts = str(int(time.time() * 1000))
+    data_id = "1234567"
+    x_request_id = "req-123"
+    manifest = f"id:{data_id};request-id:{x_request_id};ts:{ts};"
+    v1 = hmac.new(secret.encode(), msg=manifest.encode(), digestmod=hashlib.sha256).hexdigest()
+    x_signature = f"ts={ts},v1={v1}"
+
+    payload = {
+        "type": "payment",
+        "data": {"id": data_id}
+    }
+
+    with patch("app.api.v1.payments.MP_WEBHOOK_SECRET", secret):
+        response = client.post(
+            f"/api/v1/payments/webhook?data.id={data_id}",
+            json=payload,
+            headers={
+                "x-signature": x_signature,
+                "x-request-id": x_request_id
+            }
+        )
+        assert response.status_code == 200
+        assert response.json() == {"ok": True}
+
+
+@patch("app.api.v1.payments.ensure_user", new_callable=AsyncMock)
+@patch("app.api.v1.payments.register_payment", new_callable=AsyncMock)
+@patch("app.api.v1.payments.httpx.AsyncClient")
+def test_webhook_signature_verification_failure(mock_http, mock_register_payment, mock_ensure_user, client):
+    mock_ensure_user.return_value = None
+    mock_register_payment.return_value = None
+
+    payload = {
+        "type": "payment",
+        "data": {"id": "1234567"}
+    }
+
+    response = client.post(
+        "/api/v1/payments/webhook?data.id=1234567",
+        json=payload,
+        headers={
+            "x-signature": "ts=123456,v1=invalid_hash",
+            "x-request-id": "req-123"
+        }
+    )
+    assert response.status_code == 400
+    assert response.json() == {"error": "Firma inválida"}

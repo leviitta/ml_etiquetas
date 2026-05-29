@@ -10,8 +10,12 @@ ENV PYTHONUNBUFFERED=1
 # Instalar uv para una gestión rápida de dependencias
 RUN pip install --no-cache-dir uv
 
+# Crear usuario y grupo appuser con UID 1000
+RUN groupadd -g 1000 appuser && \
+    useradd -r -u 1000 -g appuser -d /app -s /sbin/nologin appuser
+
 # Copiar archivos de configuración de dependencias
-COPY pyproject.toml uv.lock ./
+COPY --chown=appuser:appuser pyproject.toml uv.lock ./
 
 # Instalar las dependencias usando uv
 RUN uv sync --frozen --no-dev
@@ -20,7 +24,13 @@ RUN uv sync --frozen --no-dev
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Copiar el resto del código de la aplicación
-COPY . .
+COPY --chown=appuser:appuser . .
+
+# Cambiar la propiedad de /app a appuser
+RUN chown -R appuser:appuser /app
+
+# Cambiar al usuario no-root
+USER appuser
 
 # Exponer el puerto en el que corre la aplicación
 EXPOSE 8080
