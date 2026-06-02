@@ -4,9 +4,12 @@ steps:
   args:
   - '-c'
   - |
-    docker pull us-central1-docker.pkg.dev/ml-etiquetas/ml-etiquetas-repo/app:latest || true
-    docker build --cache-from us-central1-docker.pkg.dev/ml-etiquetas/ml-etiquetas-repo/app:latest -t us-central1-docker.pkg.dev/ml-etiquetas/ml-etiquetas-repo/app:latest .
+    docker pull ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/app:latest || true
+    docker build --cache-from ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/app:latest \
+      -t ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/app:${_IMAGE_TAG} \
+      -t ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/app:latest .
   env:
     - 'DOCKER_BUILDKIT=1'
 images:
-- 'us-central1-docker.pkg.dev/ml-etiquetas/ml-etiquetas-repo/app:latest'
+- '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/app:${_IMAGE_TAG}'
+- '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/app:latest'

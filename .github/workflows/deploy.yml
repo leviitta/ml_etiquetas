@@ -64,6 +64,8 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    env:
+      TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform.d/plugin-cache
 
     steps:
       - name: Checkout code
@@ -78,6 +80,34 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Cache Terraform plugins
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.terraform.d/plugin-cache
+          key: ${{ runner.os }}-terraform-${{ hashFiles('terraform/.terraform.lock.hcl') }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: |
+          mkdir -p ${{ github.workspace }}/.terraform.d/plugin-cache
+          terraform init -backend-config="bucket=${{ secrets.GCP_PROJECT_ID }}-tf-state"
+        working-directory: terraform
+
+      - name: Terraform Targeted Apply (Registry and IAM)
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_region: ${{ secrets.GCP_REGION }}
+          TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+          TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          TF_VAR_secret_key: ${{ secrets.SECRET_KEY }}
+          TF_VAR_mp_access_token: ${{ secrets.MP_ACCESS_TOKEN }}
+          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+        run: |
+          terraform apply -target=google_artifact_registry_repository.repo -target=google_project_iam_member.sa_ar_writer -auto-approve
+        working-directory: terraform
+
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
@@ -89,13 +119,26 @@ jobs:
         with:
           context: .
           push: true
-          tags: us-central1-docker.pkg.dev/ml-etiquetas/ml-etiquetas-repo/app:${{ github.sha }}
+          tags: |
+            us-central1-docker.pkg.dev/ml-etiquetas/ml-etiquetas-repo/app:${{ github.sha }}
+            us-central1-docker.pkg.dev/ml-etiquetas/ml-etiquetas-repo/app:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Deploy to Cloud Run (Image Only)
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: ml-etiquetas-service
-          region: us-central1
-          image: us-central1-docker.pkg.dev/ml-etiquetas/ml-etiquetas-repo/app:${{ github.sha }}
+      - name: Terraform Plan
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_region: ${{ secrets.GCP_REGION }}
+          TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+          TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          TF_VAR_secret_key: ${{ secrets.SECRET_KEY }}
+          TF_VAR_mp_access_token: ${{ secrets.MP_ACCESS_TOKEN }}
+          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+        run: |
+          terraform plan -out=tfplan -var="image_tag=${{ github.sha }}"
+        working-directory: terraform
+
+      - name: Terraform Apply
+        run: |
+          terraform apply -auto-approve tfplan
+        working-directory: terraform

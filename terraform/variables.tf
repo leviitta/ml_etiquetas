@@ -128,3 +128,9 @@ variable "custom_domain" {
   description = "Custom domain for the application"
   default     = "www.meliops.cl"
 }
+
+variable "image_tag" {
+  type        = string
+  description = "The Docker image tag to deploy"
+  default     = "latest"
+}
