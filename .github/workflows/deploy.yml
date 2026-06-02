@@ -1,0 +1,101 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - GCP_orquestration_improvement
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: mypassword123
+          POSTGRES_DB: mldb
+        ports:
+          - 5432:5432
+        # Wait for postgres to be ready
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-groups
+
+      - name: Run Ruff check
+        run: uv run ruff check .
+        continue-on-error: true
+
+      - name: Run tests with real DB
+        env:
+          TESTING_WITH_REAL_DB: "1"
+          DATABASE_URL: postgresql://postgres:mypassword123@localhost:5432/mldb
+          SECRET_KEY: test-secret
+          MP_ACCESS_TOKEN: test-token
+        run: uv run pytest
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/ml-etiquetas/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
+          service_account: ml-etiquetas-deploy-sa@ml-etiquetas.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: us-central1-docker.pkg.dev/ml-etiquetas/ml-etiquetas-repo/app:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ml-etiquetas-service
+          region: us-central1
+          image: us-central1-docker.pkg.dev/ml-etiquetas/ml-etiquetas-repo/app:${{ github.sha }}
