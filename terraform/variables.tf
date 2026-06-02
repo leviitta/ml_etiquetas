@@ -58,6 +58,24 @@ variable "db_password" {
   sensitive   = true
 }
 
+variable "google_client_secret" {
+  type        = string
+  description = "The Google OAuth Client Secret"
+  sensitive   = true
+}
+
+variable "secret_key" {
+  type        = string
+  description = "The application secret key"
+  sensitive   = true
+}
+
+variable "mp_access_token" {
+  type        = string
+  description = "The Mercado Pago Access Token"
+  sensitive   = true
+}
+
 variable "google_client_id" {
   type        = string
   description = "The Google OAuth Client ID"

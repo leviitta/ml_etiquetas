@@ -22,6 +22,7 @@ pip-delete-this-directory.txt
 .env
 .env.*
 !.env.example
+terraform.tfvars.json
 
 # IDEs and OS
 .vscode/

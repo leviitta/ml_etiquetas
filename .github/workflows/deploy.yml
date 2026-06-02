@@ -93,7 +93,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Deploy to Cloud Run
+      - name: Deploy to Cloud Run (Image Only)
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: ml-etiquetas-service

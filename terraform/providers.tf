@@ -7,7 +7,6 @@ terraform {
     }
   }
   backend "gcs" {
-    bucket = "ml-etiquetas-tf-state"
     prefix = "terraform/state"
   }
 }

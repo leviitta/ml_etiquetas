@@ -1,3 +1,7 @@
+locals {
+  database_url = "postgresql://${var.db_user}:${urlencode(var.db_password)}@/${var.db_name}?host=/cloudsql/${google_sql_database_instance.postgres.connection_name}"
+}
+
 # Enable APIs
 resource "google_project_service" "services" {
   for_each = toset([
@@ -89,6 +93,17 @@ resource "google_secret_manager_secret" "secrets" {
   }
 }
 
+resource "google_secret_manager_secret_version" "secret_versions" {
+  for_each = {
+    "GOOGLE_CLIENT_SECRET" = var.google_client_secret
+    "SECRET_KEY"           = var.secret_key
+    "MP_ACCESS_TOKEN"      = var.mp_access_token
+    "DATABASE_URL"         = local.database_url
+  }
+  secret      = google_secret_manager_secret.secrets[each.key].id
+  secret_data = each.value
+}
+
 # Secret Manager Access for Cloud Run Service Account
 resource "google_secret_manager_secret_iam_member" "secret_accessor" {
   for_each  = google_secret_manager_secret.secrets
@@ -102,7 +117,8 @@ resource "google_cloud_run_v2_service" "app" {
   depends_on = [
     google_project_service.services,
     google_sql_database_instance.postgres,
-    google_secret_manager_secret_iam_member.secret_accessor
+    google_secret_manager_secret_iam_member.secret_accessor,
+    google_secret_manager_secret_version.secret_versions
   ]
   name     = var.service_name
   location = var.region
@@ -167,7 +183,6 @@ resource "google_cloud_run_v2_service" "app" {
         value = "https://${var.custom_domain}"
       }
 
-      # Secrets mapped to env vars
       dynamic "env" {
         for_each = toset(["GOOGLE_CLIENT_SECRET", "SECRET_KEY", "MP_ACCESS_TOKEN", "DATABASE_URL"])
         content {
@@ -175,7 +190,7 @@ resource "google_cloud_run_v2_service" "app" {
           value_source {
             secret_key_ref {
               secret  = google_secret_manager_secret.secrets[env.key].secret_id
-              version = "latest"
+              version = google_secret_manager_secret_version.secret_versions[env.key].version
             }
           }
         }
@@ -198,6 +213,12 @@ resource "google_cloud_run_v2_service" "app" {
   traffic {
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
     percent = 100
+  }
+
+  lifecycle {
+    ignore_changes = [
+      template[0].containers[0].image
+    ]
   }
 }
 
