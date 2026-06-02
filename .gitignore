@@ -46,3 +46,19 @@ AGENTS.md
 
 # Memory
 memory/
+
+# Terraform Plan
+*.tfplan
+tfplan
+
+# Terraform local
+**/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.d/
+*.tfvars
+*.tfvars.json
+
+# Virtual Environments
+venv/
+ENV/

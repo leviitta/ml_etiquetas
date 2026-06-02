@@ -56,3 +56,10 @@ AGENTS.md
 
 # Memory & Audits
 memory/
+
+# Terraform (Security: prevent secrets leakage, optimization)
+terraform/
+
+# CI/CD and Tests
+.github/
+pytest.ini
