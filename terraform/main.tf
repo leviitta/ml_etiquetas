@@ -34,11 +34,11 @@ resource "google_sql_database_instance" "postgres" {
   region           = var.region
 
   settings {
-    tier                        = "db-f1-micro"
-    disk_autoresize             = true
+    tier            = "db-f1-micro"
+    disk_autoresize = true
     backup_configuration {
-      enabled            = true
-      start_time         = "03:00"
+      enabled    = true
+      start_time = "03:00"
     }
   }
   deletion_protection = true
@@ -106,8 +106,13 @@ resource "google_secret_manager_secret_version" "secret_versions" {
 
 # Secret Manager Access for Cloud Run Service Account
 resource "google_secret_manager_secret_iam_member" "secret_accessor" {
-  for_each  = google_secret_manager_secret.secrets
-  secret_id = each.value.secret_id
+  for_each = toset([
+    "GOOGLE_CLIENT_SECRET",
+    "SECRET_KEY",
+    "MP_ACCESS_TOKEN",
+    "DATABASE_URL"
+  ])
+  secret_id = google_secret_manager_secret.secrets[each.key].secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.cloud_run_sa.email}"
 }
@@ -128,7 +133,7 @@ resource "google_cloud_run_v2_service" "app" {
     service_account = google_service_account.cloud_run_sa.email
 
     containers {
-      image = "gcr.io/cloudrun/hello" # Dummy image initially
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.repo_name}/app:${var.image_tag}"
 
       ports {
         container_port = 8080
@@ -214,12 +219,6 @@ resource "google_cloud_run_v2_service" "app" {
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
     percent = 100
   }
-
-  lifecycle {
-    ignore_changes = [
-      template[0].containers[0].image
-    ]
-  }
 }
 
 # Allow unauthenticated access to Cloud Run
@@ -248,6 +247,7 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
     "attribute.actor"      = "assertion.actor"
     "attribute.repository" = "assertion.repository"
   }
+  attribute_condition = "attribute.repository == 'leviitta/ml_etiquetas'"
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
   }
@@ -275,6 +275,63 @@ resource "google_project_iam_member" "sa_sa_user" {
 
 resource "google_project_iam_member" "sa_ar_writer" {
   project = var.project_id
-  role    = "roles/artifactregistry.writer"
+  role    = "roles/artifactregistry.admin"
   member  = "serviceAccount:${google_service_account.deploy_sa.email}"
+}
+
+resource "google_project_iam_member" "sa_cloudsql_admin" {
+  project = var.project_id
+  role    = "roles/cloudsql.admin"
+  member  = "serviceAccount:${google_service_account.deploy_sa.email}"
+}
+
+resource "google_project_iam_member" "sa_secretmanager_admin" {
+  project = var.project_id
+  role    = "roles/secretmanager.admin"
+  member  = "serviceAccount:${google_service_account.deploy_sa.email}"
+}
+
+resource "google_project_iam_member" "sa_project_iam_admin" {
+  project = var.project_id
+  role    = "roles/resourcemanager.projectIamAdmin"
+  member  = "serviceAccount:${google_service_account.deploy_sa.email}"
+}
+
+resource "google_project_iam_member" "sa_service_usage_admin" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageAdmin"
+  member  = "serviceAccount:${google_service_account.deploy_sa.email}"
+}
+
+resource "google_project_iam_member" "sa_service_account_admin" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountAdmin"
+  member  = "serviceAccount:${google_service_account.deploy_sa.email}"
+}
+
+resource "google_project_iam_member" "sa_workload_identity_pool_admin" {
+  project = var.project_id
+  role    = "roles/iam.workloadIdentityPoolAdmin"
+  member  = "serviceAccount:${google_service_account.deploy_sa.email}"
+}
+
+resource "google_project_iam_member" "sa_storage_object_admin" {
+  project = var.project_id
+  role    = "roles/storage.objectAdmin"
+  member  = "serviceAccount:${google_service_account.deploy_sa.email}"
+}
+
+# Cloud Run Domain Mapping
+resource "google_cloud_run_domain_mapping" "domain_mapping" {
+  depends_on = [google_cloud_run_v2_service.app]
+  location   = var.region
+  name       = var.custom_domain
+
+  metadata {
+    namespace = var.project_id
+  }
+
+  spec {
+    route_name = google_cloud_run_v2_service.app.name
+  }
 }
