@@ -56,6 +56,7 @@ function hideLoadingOverlay() {
 }
 
 function matchesKeywords(a) {
+  if (!a.href) return false;
   const href = (a.href || "").toLowerCase();
   const text = (a.textContent || "").toLowerCase();
   const keywords = ["pdf", "label", "print", "reprint", "reimprimir"];
@@ -65,14 +66,19 @@ function matchesKeywords(a) {
 async function extractHiddenLinks() {
   const urls = new Set();
   
+  const addValidUrl = (a) => {
+    if (a.href && a.href.startsWith("http") && a.href !== window.location.href && !a.href.endsWith("#")) {
+      urls.add(a.href);
+      console.log("[MeliOps] Capturado enlace:", a.href);
+    }
+  };
+
   const visibleLinks = Array.from(document.querySelectorAll("a")).filter(a => {
     const isVisible = a.offsetWidth > 0 || a.offsetHeight > 0 || a.getClientRects().length > 0;
     return isVisible && matchesKeywords(a);
   });
   for (const a of visibleLinks) {
-    if (a.href) {
-      urls.add(a.href);
-    }
+    addValidUrl(a);
   }
   
   const menus = document.querySelectorAll('.andes-floating-menu.secondary-actions, .andes-floating-menu');
@@ -85,9 +91,7 @@ async function extractHiddenLinks() {
     
     const menuLinks = Array.from(document.querySelectorAll('a')).filter(matchesKeywords);
     for (const a of menuLinks) {
-      if (a.href) {
-        urls.add(a.href);
-      }
+      addValidUrl(a);
     }
     
     menu.click();

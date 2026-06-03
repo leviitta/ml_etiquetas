@@ -44,13 +44,37 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 
 async function processMultiplePdfs(urls) {
   const fetchPromises = urls.map(async (url, index) => {
-    const pdfResponse = await fetch(url, { credentials: "include" });
+    console.log("[MeliOps] Fetching URL:", url);
+    let pdfResponse = await fetch(url, { credentials: "include" });
     if (!pdfResponse.ok) {
       throw new Error(`No se pudo descargar el PDF original de MercadoLibre (${index + 1}/${urls.length}).`);
     }
-    const contentType = pdfResponse.headers.get("content-type") || "";
+    let contentType = pdfResponse.headers.get("content-type") || "";
     if (!contentType.toLowerCase().includes("pdf") && !contentType.toLowerCase().includes("octet-stream")) {
-      throw new Error("El archivo descargado no es un PDF válido. Verifica tu sesión de MercadoLibre.");
+      const text = await pdfResponse.text();
+      console.log("[MeliOps] HTML devuelto para", url, text.substring(0, 500));
+      
+      const metaMatch = text.match(/url=([^"'>]+)/i);
+      const jsMatch = text.match(/window\.location\s*=\s*['"]([^"']+)['"]/i);
+      const redirectUrl = (metaMatch ? metaMatch[1] : null) || (jsMatch ? jsMatch[1] : null);
+      
+      if (redirectUrl) {
+        let targetUrl = redirectUrl.replace(/&amp;/g, "&");
+        if (!targetUrl.startsWith("http")) {
+          targetUrl = new URL(targetUrl, url).href;
+        }
+        console.log("[MeliOps] Fetching redirect URL:", targetUrl);
+        pdfResponse = await fetch(targetUrl, { credentials: "include" });
+        if (!pdfResponse.ok) {
+          throw new Error(`No se pudo descargar el PDF original de MercadoLibre (${index + 1}/${urls.length}).`);
+        }
+        contentType = pdfResponse.headers.get("content-type") || "";
+        if (!contentType.toLowerCase().includes("pdf") && !contentType.toLowerCase().includes("octet-stream")) {
+          throw new Error("El enlace " + url + " no devolvió un PDF válido.");
+        }
+      } else {
+        throw new Error("El enlace " + url + " no devolvió un PDF válido.");
+      }
     }
     const pdfBlob = await pdfResponse.blob();
     return { blob: pdfBlob, filename: `etiqueta_${index + 1}.pdf` };
