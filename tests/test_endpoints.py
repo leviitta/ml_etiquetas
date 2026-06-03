@@ -61,11 +61,12 @@ def test_extract_no_files(client):
 
 @patch("app.api.v1.router_extract.ensure_user", new_callable=AsyncMock)
 def test_extract_file_too_large(mock_ensure_user, client):
-    large_content = b"%PDF-1.4 " + b"x" * (200 * 1024 + 1)
+    large_content = b"%PDF-1.4 " + b"x" * (2000 * 1024 + 1)
     files = [("files", ("large.pdf", large_content, "application/pdf"))]
     response = client.post("/api/v1/extract", files=files)
     assert response.status_code == 400
     assert "supera el límite de tamaño" in response.json()["error"]
+    assert "2 MB" in response.json()["error"]
 
 
 @patch("app.api.v1.router_extract.ensure_user", new_callable=AsyncMock)

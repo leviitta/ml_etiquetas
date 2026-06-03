@@ -34,15 +34,15 @@ async def extract_label(
     if not valid_files:
         return JSONResponse(status_code=400, content={"error": "Por favor, sube al menos un archivo PDF válido."})
         
-    # Validar límite de tamaño de 200 KB por archivo
+    # Validar límite de tamaño de 2 MB por archivo
     for file in valid_files:
         _ = file.file.seek(0, 2)
         size = file.file.tell()
         _ = file.file.seek(0)
-        if size > 200 * 1024:
+        if size > 2000 * 1024:
             return JSONResponse(
                 status_code=400,
-                content={"error": f"El archivo {file.filename} supera el límite de tamaño permitido de 200 KB."}
+                content={"error": f"El archivo {file.filename} supera el límite de tamaño permitido de 2 MB."}
             )
             
     num_files = len(valid_files)

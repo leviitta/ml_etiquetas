@@ -44,9 +44,13 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 
 async function processMultiplePdfs(urls) {
   const fetchPromises = urls.map(async (url, index) => {
-    const pdfResponse = await fetch(url);
+    const pdfResponse = await fetch(url, { credentials: "include" });
     if (!pdfResponse.ok) {
       throw new Error(`No se pudo descargar el PDF original de MercadoLibre (${index + 1}/${urls.length}).`);
+    }
+    const contentType = pdfResponse.headers.get("content-type") || "";
+    if (!contentType.toLowerCase().includes("pdf") && !contentType.toLowerCase().includes("octet-stream")) {
+      throw new Error("El archivo descargado no es un PDF válido. Verifica tu sesión de MercadoLibre.");
     }
     const pdfBlob = await pdfResponse.blob();
     return { blob: pdfBlob, filename: `etiqueta_${index + 1}.pdf` };
@@ -74,9 +78,13 @@ async function processMultiplePdfs(urls) {
 }
 
 async function processPdfUrl(url) {
-  const pdfResponse = await fetch(url);
+  const pdfResponse = await fetch(url, { credentials: "include" });
   if (!pdfResponse.ok) {
     throw new Error("No se pudo descargar el PDF original de MercadoLibre.");
+  }
+  const contentType = pdfResponse.headers.get("content-type") || "";
+  if (!contentType.toLowerCase().includes("pdf") && !contentType.toLowerCase().includes("octet-stream")) {
+    throw new Error("El archivo descargado no es un PDF válido. Verifica tu sesión de MercadoLibre.");
   }
   const pdfBlob = await pdfResponse.blob();
 
