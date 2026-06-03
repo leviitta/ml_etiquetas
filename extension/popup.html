@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 320px;
+      font-family: 'Proxima Nova', -apple-system, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: bold;
+      color: #2D3277;
+    }
+    .logo span {
+      color: #FFE600;
+      background-color: #2D3277;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 4px;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-bottom: 12px;
+    }
+    .title {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .desc {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: #FFE600;
+      color: #2D3277;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      text-align: center;
+      cursor: pointer;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+    .btn:hover {
+      background-color: #E6CE00;
+    }
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: #999;
+      margin-top: 16px;
+    }
+    .footer a {
+      color: #2D3277;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">Meli<span>Ops</span></div>
+  </div>
+  
+  <div class="card">
+    <div class="title">Optimizar desde MercadoLibre</div>
+    <div class="desc">Navega a la sección de ventas de MercadoLibre y usa el botón flotante para optimizar tus etiquetas al instante.</div>
+  </div>
+
+  <div class="card">
+    <div class="title">Subir archivo manualmente</div>
+    <div class="desc">¿Tienes el PDF en tu computadora? Súbelo directamente para procesarlo.</div>
+    <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+    <button class="btn" id="uploadBtn" type="button">Seleccionar PDF</button>
+  </div>
+
+  <div class="footer">
+    Desarrollado por <a href="https://www.meliops.cl" target="_blank">meliops.cl</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

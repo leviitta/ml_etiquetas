@@ -220,6 +220,16 @@ def process_multiple_labels(input_paths: List[str], output_path: str) -> str:
             
             label_count += 1
             
+        for page in merged_doc:
+            point = fitz.Point(50, 650)
+            page.insert_text(
+                point,
+                "Generado gratis por meliops.cl",
+                fontsize=20,
+                color=(0.9, 0.9, 0.9),
+                morph=(point, fitz.Matrix(-45))
+            )
+            
         merged_doc.save(output_path)
     finally:
         for doc in src_docs:

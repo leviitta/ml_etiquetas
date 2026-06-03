@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "MeliOps - Optimizador de Etiquetas",
+  "version": "1.0.0",
+  "description": "Optimiza tus etiquetas de envío de MercadoLibre directamente desde la plataforma.",
+  "permissions": [
+    "cookies",
+    "activeTab",
+    "downloads"
+  ],
+  "host_permissions": [
+    "*://*.mercadolibre.cl/*",
+    "*://*.mercadolibre.com.ar/*",
+    "*://*.mercadolibre.com.mx/*",
+    "*://*.mercadolibre.com.co/*",
+    "*://*.mercadolibre.com.br/*",
+    "*://*.meliops.cl/*",
+    "http://localhost:8000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.mercadolibre.cl/v3/sales*",
+        "*://*.mercadolibre.com.ar/v3/sales*",
+        "*://*.mercadolibre.com.mx/v3/sales*",
+        "*://*.mercadolibre.com.co/v3/sales*",
+        "*://*.mercadolibre.com.br/v3/sales*",
+        "*://*.mercadolibre.cl/ventas/*",
+        "*://*.mercadolibre.com.ar/ventas/*",
+        "*://*.mercadolibre.com.mx/ventas/*",
+        "*://*.mercadolibre.com.co/ventas/*",
+        "*://*.mercadolibre.com.br/ventas/*"
+      ],
+      "js": ["content.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

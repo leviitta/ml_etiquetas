@@ -147,3 +147,18 @@ def test_secret_key_validation():
             except Exception:
                 pass
 
+
+def test_cors_headers(client):
+    response = client.options(
+        "/api/v1/extract",
+        headers={
+            "Origin": "chrome-extension://abcdefghijklmnopqrstuvwxyzabcdef",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        }
+    )
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == "chrome-extension://abcdefghijklmnopqrstuvwxyzabcdef"
+    assert response.headers.get("access-control-allow-credentials") == "true"
+
+

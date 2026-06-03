@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from app.api.v1.endpoints import router as extract_router
@@ -42,6 +43,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8000", "https://www.meliops.cl", "https://meliops.cl"],
+    allow_origin_regex=r"chrome-extension://[a-zA-Z0-9]+|https://.*\.mercadolibre\..*",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Add Session Middleware for OAuth
 secret_key = os.getenv("SECRET_KEY")
 if not secret_key or secret_key == "una_clave_secreta_de_respaldo":
@@ -51,7 +61,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=secret_key,
     https_only=True,
-    same_site="lax"
+    same_site="none"
 )
 
 class CustomStaticFiles(StaticFiles):
