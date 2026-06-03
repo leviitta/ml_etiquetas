@@ -67,10 +67,19 @@ async function extractHiddenLinks() {
   const urls = new Set();
   
   const addValidUrl = (a) => {
-    if (a.href && a.href.startsWith("http") && a.href !== window.location.href && !a.href.endsWith("#")) {
-      urls.add(a.href);
-      console.log("[MeliOps] Capturado enlace:", a.href);
+    if (!a.href?.startsWith("http")) {
+      return;
     }
+    const baseHref = a.href.split("#")[0];
+    const baseUrl = window.location.href.split("#")[0];
+    if (baseHref === baseUrl) {
+      return;
+    }
+    if (a.href.includes("/publicaciones/listado")) {
+      return;
+    }
+    urls.add(a.href);
+    console.log("[MeliOps] Capturado enlace:", a.href);
   };
 
   const visibleLinks = Array.from(document.querySelectorAll("a")).filter(a => {
