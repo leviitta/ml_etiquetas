@@ -64,8 +64,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    env:
-      TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform.d/plugin-cache
 
     steps:
       - name: Checkout code
@@ -81,18 +79,11 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Cache Terraform plugins
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/.terraform.d/plugin-cache
-          key: ${{ runner.os }}-terraform-${{ hashFiles('terraform/.terraform.lock.hcl') }}
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
         run: |
-          mkdir -p ${{ github.workspace }}/.terraform.d/plugin-cache
           terraform init -backend-config="bucket=${{ secrets.GCP_PROJECT_ID }}-tf-state"
         working-directory: terraform
 
