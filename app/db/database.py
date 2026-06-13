@@ -26,15 +26,20 @@ else:
 _pool = None
 
 async def init_db() -> None:
-    """Crea las tablas si no existen. Llamar al arrancar la aplicación."""
+    """Crea el pool y las tablas si no existen. Llamar al arrancar la aplicación.
+
+    Idempotente: si el pool ya existe (p. ej. un segundo arranque del lifespan
+    bajo TestClient, que usa otro event loop), no vuelve a tocarlo.
+    """
     global _pool
-    if _pool is None:
-        try:
-            _pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=10)
-        except Exception as e:
-            logger.error(f"Error connecting to database: {e}")
-            raise e
-            
+    if _pool is not None:
+        return
+    try:
+        _pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=10)
+    except Exception as e:
+        logger.error(f"Error connecting to database: {e}")
+        raise e
+
     try:
         async with _pool.acquire() as conn:
             await conn.execute("""

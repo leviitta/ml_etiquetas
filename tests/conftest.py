@@ -1,6 +1,5 @@
 import pytest
 import os
-import asyncio
 from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
 
@@ -17,18 +16,15 @@ else:
     if "DATABASE_URL" not in os.environ:
         os.environ["DATABASE_URL"] = "postgresql://postgres:mypassword123@localhost:5432/mldb"
 
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for each test case."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
 @pytest.fixture(scope="session", autouse=True)
-def db_setup(event_loop):
+async def db_setup():
+    # Crea el pool en el loop de sesión de pytest-asyncio, el mismo que usan
+    # los tests y fixtures (asyncio_default_*_loop_scope = session). Así el pool
+    # de asyncpg no queda ligado a un loop distinto al de quien lo consume.
     if use_real_db:
         from app.db.database import init_db
-        event_loop.run_until_complete(init_db())
+        await init_db()
+    yield
 
 @pytest.fixture(autouse=True)
 async def clean_database():
