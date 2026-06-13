@@ -3,8 +3,8 @@ import uuid
 import shutil
 import tempfile
 from typing import List
-from fastapi import APIRouter, Request, File, UploadFile, BackgroundTasks
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import APIRouter, Request, File, UploadFile, BackgroundTasks, HTTPException
+from fastapi.responses import FileResponse
 from app.utils.extract_label import process_multiple_labels
 from app.db.quota import verify_quota_for_batch, QuotaExceededException, ensure_user
 
@@ -32,17 +32,17 @@ async def extract_label(
 
     valid_files = [f for f in files if f.filename and f.filename.lower().endswith(".pdf")]
     if not valid_files:
-        return JSONResponse(status_code=400, content={"error": "Por favor, sube al menos un archivo PDF válido."})
-        
+        raise HTTPException(status_code=400, detail="Por favor, sube al menos un archivo PDF válido.")
+
     # Validar límite de tamaño de 2 MB por archivo
     for file in valid_files:
         _ = file.file.seek(0, 2)
         size = file.file.tell()
         _ = file.file.seek(0)
         if size > 2000 * 1024:
-            return JSONResponse(
+            raise HTTPException(
                 status_code=400,
-                content={"error": f"El archivo {file.filename} supera el límite de tamaño permitido de 2 MB."}
+                detail=f"El archivo {file.filename} supera el límite de tamaño permitido de 2 MB."
             )
             
     num_files = len(valid_files)
@@ -51,7 +51,7 @@ async def extract_label(
     try:
         await verify_quota_for_batch(identifier, num_files)
     except QuotaExceededException as e:
-        return JSONResponse(status_code=403, content={"error": str(e.detail)})
+        raise HTTPException(status_code=403, detail=str(e.detail))
         
     # Usar un directorio temporal seguro
     temp_dir_obj = tempfile.TemporaryDirectory()
@@ -74,7 +74,7 @@ async def extract_label(
             
     except Exception as e:
         temp_dir_obj.cleanup()
-        return JSONResponse(status_code=500, content={"error": f"Error al procesar los PDFs: {str(e)}"})
+        raise HTTPException(status_code=500, detail=f"Error al procesar los PDFs: {str(e)}")
 
     # Limpiar el directorio temporal después de enviar el archivo
     background_tasks.add_task(temp_dir_obj.cleanup)

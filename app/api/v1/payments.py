@@ -15,7 +15,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 import httpx
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.db.quota import ensure_user, register_payment, get_quota_status
@@ -50,7 +50,7 @@ async def create_preference(request: Request):
     """Crea una preferencia de pago en Mercado Pago y devuelve el init_point."""
     user = request.session.get("user")
     if not user:
-        return JSONResponse(status_code=401, content={"error": "Debes iniciar sesión."})
+        raise HTTPException(status_code=401, detail="Debes iniciar sesión.")
 
     email = user.get("email", "")
     await ensure_user(email, user.get("name", ""))
@@ -141,11 +141,11 @@ async def create_preference(request: Request):
             )
     except Exception as e:
         logger.error("Error conectando con Mercado Pago: %s", e)
-        return JSONResponse(status_code=502, content={"error": "No se pudo conectar con Mercado Pago."})
+        raise HTTPException(status_code=502, detail="No se pudo conectar con Mercado Pago.")
 
     if resp.status_code not in (200, 201):
         logger.error("Error creando preferencia MP [%s]: %s", resp.status_code, resp.text)
-        return JSONResponse(status_code=500, content={"error": "No se pudo crear la preferencia de pago."})
+        raise HTTPException(status_code=500, detail="No se pudo crear la preferencia de pago.")
 
     data = resp.json()
     return JSONResponse(
@@ -345,7 +345,7 @@ async def payment_webhook(request: Request):
     """
     body_bytes = await request.body()
     if not verify_webhook_signature(request, body_bytes):
-        return JSONResponse(status_code=400, content={"error": "Firma inválida"})
+        raise HTTPException(status_code=400, detail="Firma inválida")
 
     try:
         body = json.loads(body_bytes) if body_bytes else {}

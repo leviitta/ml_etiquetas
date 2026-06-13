@@ -4,10 +4,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, PlainTextResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.api.v1.endpoints import router as extract_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.payments import router as payments_router
@@ -64,6 +66,19 @@ app.add_middleware(
     same_site="none"
 )
 
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """Uniform error envelope: always {"error": ...} so the frontend can read data.error."""
+    return JSONResponse(status_code=exc.status_code, content={"error": exc.detail})
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Map request validation failures to the same {"error": ...} envelope."""
+    return JSONResponse(status_code=422, content={"error": "Solicitud inválida."})
+
+
 class CustomStaticFiles(StaticFiles):
     def file_response(self, *args, **kwargs):
         response = super().file_response(*args, **kwargs)
@@ -73,11 +88,14 @@ class CustomStaticFiles(StaticFiles):
 # Mount static files
 app.mount("/static", CustomStaticFiles(directory="app/static"), name="static")
 
-# Include the router for version 1 of our API
-app.include_router(extract_router, prefix="/api/v1", tags=["etiquetas"])
+# API v1 routers (interfaz máquina-a-máquina, JSON)
+app.include_router(extract_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(payments_router, prefix="/api/v1/payments", tags=["payments"])
 
+# Páginas HTML y archivos SEO, servidos en la URL raíz limpia
+from app.api.v1.router_ui import router as ui_router
+app.include_router(ui_router)
 from app.api.root import router as root_router
 app.include_router(root_router)
 

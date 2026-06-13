@@ -21,7 +21,7 @@ oauth.register(
 STATIC_BASE_URL = os.getenv("BASE_URL", "http://localhost:8000").rstrip("/")
 
 @router.get('/login')
-async def login(request: Request, intent_plan: str = None):
+async def login(request: Request, intent_plan: str | None = None):
     if intent_plan:
         request.session['intent_plan'] = intent_plan
     

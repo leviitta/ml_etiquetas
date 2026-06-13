@@ -1,7 +1,9 @@
-from fastapi import APIRouter
-from fastapi.responses import PlainTextResponse, RedirectResponse
+from fastapi import APIRouter, Request
+from fastapi.responses import PlainTextResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
+templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/robots.txt", include_in_schema=False, response_class=PlainTextResponse)
 async def robots_txt():
@@ -16,8 +18,19 @@ async def sitemap_xml():
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
+  <url>
+    <loc>https://www.meliops.cl/faq</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>"""
 
-@router.get("/", include_in_schema=False)
-async def root():
-    return RedirectResponse(url="/api/v1/")
+@router.get("/faq", response_class=HTMLResponse, include_in_schema=False)
+async def get_faq(request: Request):
+    """Render the FAQ page at a clean, public URL"""
+    user = request.session.get('user')
+    return templates.TemplateResponse(
+        request=request,
+        name="faq.html",
+        context={"user": user}
+    )

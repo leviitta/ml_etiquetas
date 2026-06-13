@@ -12,7 +12,7 @@ def format_price(amount: float) -> str:
     """Format price to a string like 4.990"""
     return f"{int(amount):,}".replace(",", ".")
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def get_index(request: Request):
     """Render the upload form"""
     user = request.session.get('user')
@@ -38,17 +38,7 @@ async def get_index(request: Request):
     }
         
     return templates.TemplateResponse(
-        request=request, 
-        name="index.html", 
+        request=request,
+        name="index.html",
         context={"user": user, "quota_status": quota_status, "prices": prices}
-    )
-
-@router.get("/faq", response_class=HTMLResponse)
-async def get_faq(request: Request):
-    """Render the FAQ page"""
-    user = request.session.get('user')
-    return templates.TemplateResponse(
-        request=request, 
-        name="faq.html", 
-        context={"user": user}
     )
