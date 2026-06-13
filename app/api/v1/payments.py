@@ -194,7 +194,7 @@ async def payment_success(request: Request):
                 real_status = payment_data.get("status")
                 if real_status != "approved":
                     logger.warning(f"Intento de fraude o pago no aprobado: {payment_id}")
-                    return RedirectResponse(url="/api/v1/?payment=failure")
+                    return RedirectResponse(url="/?payment=failure")
                 
                 plan_type = payment_data.get("metadata", {}).get("plan_type", "pro")
                 
@@ -204,7 +204,7 @@ async def payment_success(request: Request):
 
                 if not email:
                     logger.error("No se pudo identificar al usuario para el pago %s", payment_id)
-                    return RedirectResponse(url="/api/v1/?payment=failure")
+                    return RedirectResponse(url="/?payment=failure")
                 
                 # Check for actual payment status from API (security measure)
                 if plan_type == "infinity":
@@ -215,11 +215,11 @@ async def payment_success(request: Request):
                 final_amount = float(payment_data.get("transaction_amount", fallback_amount))
             except Exception as e:
                 logger.error("Error obteniendo metadata del pago en /success o pago falso: %s", e)
-                return RedirectResponse(url="/api/v1/?payment=failure")
+                return RedirectResponse(url="/?payment=failure")
         else:
             # If there is no payment_id but status was "approved" in URL, it's likely a fraudulent direct request.
             logger.warning("Solicitud a /success sin payment_id pero con status approved.")
-            return RedirectResponse(url="/api/v1/?payment=failure")
+            return RedirectResponse(url="/?payment=failure")
 
         valid_until = (datetime.now(timezone.utc) + timedelta(days=PAYMENT_DAYS)).isoformat()
         await ensure_user(email)
@@ -234,17 +234,17 @@ async def payment_success(request: Request):
         )
         logger.info("Pago aprobado para %s hasta %s con plan %s", email, valid_until, plan_type)
 
-    return RedirectResponse(url="/api/v1/?payment=success")
+    return RedirectResponse(url="/?payment=success")
 
 
 @router.get("/failure")
 async def payment_failure(request: Request):
-    return RedirectResponse(url="/api/v1/?payment=failure")
+    return RedirectResponse(url="/?payment=failure")
 
 
 @router.get("/pending")
 async def payment_pending(request: Request):
-    return RedirectResponse(url="/api/v1/?payment=pending")
+    return RedirectResponse(url="/?payment=pending")
 
 
 def verify_webhook_signature(request: Request, body_bytes: bytes) -> bool:

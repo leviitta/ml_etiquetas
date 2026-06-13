@@ -34,7 +34,7 @@ async def auth_callback(request: Request):
         token = await oauth.google.authorize_access_token(request)
     except Exception as e:
         # User might have denied access or mismatching state
-        return RedirectResponse(url='/api/v1/')
+        return RedirectResponse(url='/')
     
     # Obtenemos la info del usuario
     user = token.get('userinfo')
@@ -52,20 +52,20 @@ async def auth_callback(request: Request):
         current_plan = quota_status.get("active_plan_type", "starter")
         
         if current_plan == "infinity":
-            return RedirectResponse(url='/api/v1/?payment=already_infinity')
+            return RedirectResponse(url='/?payment=already_infinity')
             
         elif current_plan == "pro":
             if intent_plan == "infinity":
-                return RedirectResponse(url=f'/api/v1/?checkout_plan={intent_plan}')
+                return RedirectResponse(url=f'/?checkout_plan={intent_plan}')
             else:
-                return RedirectResponse(url='/api/v1/?payment=already_pro')
+                return RedirectResponse(url='/?payment=already_pro')
                 
         else:
-            return RedirectResponse(url=f'/api/v1/?checkout_plan={intent_plan}')
+            return RedirectResponse(url=f'/?checkout_plan={intent_plan}')
         
-    return RedirectResponse(url='/api/v1/')
+    return RedirectResponse(url='/')
 
 @router.get('/logout')
 async def logout(request: Request):
     request.session.pop('user', None)
-    return RedirectResponse(url='/api/v1/')
+    return RedirectResponse(url='/')

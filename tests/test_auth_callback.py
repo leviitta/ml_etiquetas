@@ -30,7 +30,7 @@ async def test_auth_callback_routing(mock_get_quota, mock_ensure_user, mock_auth
     
     response = await auth_callback(mock_request)
     assert response.status_code == 307
-    assert response.headers['location'] == '/api/v1/?checkout_plan=pro'
+    assert response.headers['location'] == '/?checkout_plan=pro'
         
     # 3. Test scenario: User is Pro and wants Infinity (Upgrade allowed)
     mock_get_quota.return_value = {"active_plan_type": "pro"}
@@ -40,7 +40,7 @@ async def test_auth_callback_routing(mock_get_quota, mock_ensure_user, mock_auth
     
     response = await auth_callback(mock_request)
     assert response.status_code == 307
-    assert response.headers['location'] == '/api/v1/?checkout_plan=infinity'
+    assert response.headers['location'] == '/?checkout_plan=infinity'
         
     # 4. Test scenario: User is Pro and clicks Pro again (Stop duplicate purchase)
     mock_get_quota.return_value = {"active_plan_type": "pro"}
@@ -50,7 +50,7 @@ async def test_auth_callback_routing(mock_get_quota, mock_ensure_user, mock_auth
     
     response = await auth_callback(mock_request)
     assert response.status_code == 307
-    assert response.headers['location'] == '/api/v1/?payment=already_pro'
+    assert response.headers['location'] == '/?payment=already_pro'
         
     # 5. Test scenario: User is Infinity and wants Pro (Already maxed)
     mock_get_quota.return_value = {"active_plan_type": "infinity"}
@@ -60,5 +60,5 @@ async def test_auth_callback_routing(mock_get_quota, mock_ensure_user, mock_auth
     
     response = await auth_callback(mock_request)
     assert response.status_code == 307
-    assert response.headers['location'] == '/api/v1/?payment=already_infinity'
+    assert response.headers['location'] == '/?payment=already_infinity'
 
