@@ -74,7 +74,8 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: projects/ml-etiquetas/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
+          # NOTE: el audience de WIF exige el project NUMBER, no el project ID.
+          workload_identity_provider: projects/890639424998/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
           service_account: ml-etiquetas-deploy-sa@ml-etiquetas.iam.gserviceaccount.com
 
       - name: Set up Cloud SDK
