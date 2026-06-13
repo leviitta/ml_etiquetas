@@ -17,7 +17,7 @@ def test_get_index_anonymous(mock_get_quota, mock_ensure_user, client):
         "active_plan_type": "starter"
     }
     
-    response = client.get("/api/v1/")
+    response = client.get("/")
     assert response.status_code == 200
     assert "MeliOps" in response.text
     assert "Optimizador de Etiquetas" in response.text
@@ -43,13 +43,13 @@ def test_get_index_logged_in(mock_get_quota, mock_ensure_user, client):
             "user": {"email": "test@example.com", "name": "Test User"}
         }.get(key, default)
         
-        response = client.get("/api/v1/")
+        response = client.get("/")
         assert response.status_code == 200
         assert "MeliOps" in response.text
 
 
 def test_get_faq(client):
-    response = client.get("/api/v1/faq")
+    response = client.get("/faq")
     assert response.status_code == 200
     assert "Cómo Separar Etiquetas de Mercado Libre" in response.text
 
